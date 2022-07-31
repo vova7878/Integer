@@ -187,10 +187,6 @@ namespace JIO {
             return false;
         };
 
-        constexpr inline bool isSNegative() const {
-            return S(value) < 0;
-        };
-
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) {
             U tmp = v1.value + v2.value;
@@ -269,10 +265,6 @@ namespace JIO {
         constexpr explicit inline p_Integer_S(const S n) : value(n) { }
 
         constexpr inline bool isNegative() const {
-            return S(value) < 0;
-        };
-
-        constexpr inline bool isSNegative() const {
             return S(value) < 0;
         };
 
@@ -390,6 +382,10 @@ namespace JIO {
 
         constexpr inline bool isZero() const {
             return T::value == 0;
+        };
+
+        constexpr inline bool upperBit() const {
+            return S(T::value) < 0;
         };
 
         constexpr inline static bool add_overflow(
@@ -565,17 +561,13 @@ namespace JIO {
         low(low), high(U::ZERO()) { }
 
         constexpr explicit inline p_Pow2_Integer_Base(const S &low) :
-        low(low), high(low.isSNegative() ? ~U::ZERO() : U::ZERO()) { }
+        low(low), high(low.upperBit() ? ~U::ZERO() : U::ZERO()) { }
 
         constexpr inline p_Pow2_Integer_Base(const U &low, const U &high) :
         low(low), high(high) { }
 
         constexpr inline bool isNegative() const {
             return false;
-        };
-
-        constexpr inline bool isSNegative() const {
-            return high.isSNegative();
         };
 
         constexpr inline static bool add_overflow(
@@ -666,7 +658,7 @@ namespace JIO {
                         S(value.high) >> shiftDistance);
             }
             return I(S(value.high) >> (shiftDistance - half * 8),
-                    value.high.isSNegative() ? ~U::ZERO() : U::ZERO());
+                    value.high.upperBit() ? ~U::ZERO() : U::ZERO());
         }
     public:
 
@@ -682,11 +674,7 @@ namespace JIO {
         low(low), high(high) { }
 
         constexpr inline bool isNegative() const {
-            return high.isSNegative();
-        };
-
-        constexpr inline bool isSNegative() const {
-            return high.isSNegative();
+            return high.upperBit();
         };
 
         constexpr inline bool operator>(const I &other) const {
@@ -791,6 +779,10 @@ namespace JIO {
             return T::low.isZero() && T::high.isZero();
         };
 
+        constexpr inline bool upperBit() const {
+            return T::high.upperBit();
+        };
+
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) {
             return T::add_overflow(v1, v2, out);
@@ -810,7 +802,7 @@ namespace JIO {
         }
 
         constexpr inline static void leftShiftOneBit(I &value, bool bit) {
-            U::leftShiftOneBit(value.high, value.low.isSNegative());
+            U::leftShiftOneBit(value.high, value.low.upperBit());
             U::leftShiftOneBit(value.low, bit);
         }
 
@@ -1380,7 +1372,7 @@ namespace JIO {
         bool carry = 0;
         for (; sr > 0; --sr) {
             // r:q = ((r:q)  << 1) | carry
-            UI::leftShiftOneBit(r, q.isSNegative());
+            UI::leftShiftOneBit(r, q.upperBit());
             UI::leftShiftOneBit(q, carry);
 
             carry = false;
@@ -1590,8 +1582,8 @@ namespace JIO {
             return value.isNegative();
         };
 
-        constexpr inline bool isSNegative() const {
-            return value.isSNegative();
+        constexpr inline bool upperBit() const {
+            return value.upperBit();
         };
 
         constexpr inline static bool add_overflow(
