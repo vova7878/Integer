@@ -844,12 +844,14 @@ namespace JIO {
 
         template<typename II = Integer<half * 2, sig>>
         constexpr inline I operator/(const I &other) const {
-            return divrem(II(*this), II(other)).first.value;
+            return divrem(II(*this), II(other)).value;
         }
 
         template<typename II = Integer<half * 2, sig>>
         constexpr inline I operator%(const I &other) const {
-            return divrem(II(*this), II(other)).second.value;
+            II rem;
+            divrem(II(*this), II(other), &rem);
+            return rem.value;
         }
 
         constexpr inline I operator+(const I &other) const {
@@ -933,6 +935,276 @@ namespace JIO {
         return std::is_signed<T>::value;
     }
 
+    namespace p_i_seq {
+
+        template <typename T, T... values>
+        struct array_t {
+
+            constexpr inline const T operator[](size_t index) const {
+                static_assert(sizeof...(values) != 0, "zero-size array");
+                constexpr T data[sizeof...(values)] = {values...};
+                return data[index];
+            }
+        };
+
+        template <typename T, size_t length>
+        struct v_array_t {
+            T data[max(size_t(1), length)];
+
+            constexpr inline const T& operator[](size_t index) const {
+                return data[index];
+            }
+
+            constexpr inline T& operator[](size_t index) {
+                return data[index];
+            }
+        };
+
+        template <typename T, size_t length>
+        constexpr inline void unused_array(v_array_t<T, length>) { }
+
+        template<typename T, T... v1, T... v2>
+        constexpr inline array_t<T, v1..., v2...>
+        append(array_t<T, v1...>, array_t<T, v2...>) {
+            return {};
+        }
+
+        template <typename T, T f, T l,
+        int = (f > l) ? -1 : (l == f ? 0 : ((l - f == 1) ? 1 : 2))>
+        struct seq_h;
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 0> {
+            typedef array_t<T> type;
+        };
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 1> {
+            typedef array_t<T, f> type;
+        };
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 2> {
+            constexpr static T d = l - f;
+            typedef decltype(append<T>(
+                    typename seq_h<T, f, f + d / 2 > ::type(),
+                    typename seq_h<T, f + d / 2, f + d> ::type()
+                    )) type;
+        };
+
+        template<typename T, T f, T l>
+        constexpr inline typename seq_h<T, f, l>::type make_array() {
+            return {};
+        }
+    }
+
+    template<int>
+    struct p_Element_Types;
+
+    template<>
+    struct p_Element_Types<0> {
+        typedef uint32_t U;
+        typedef int32_t S;
+        typedef uint64_t DU;
+        typedef int64_t DS;
+    };
+
+    template<>
+    struct p_Element_Types<1> {
+        typedef uint8_t U;
+        typedef int8_t S;
+        typedef uint16_t DU;
+        typedef int16_t DS;
+    };
+
+    template<>
+    struct p_Element_Types<2> {
+        typedef uint16_t U;
+        typedef int16_t S;
+        typedef uint32_t DU;
+        typedef int32_t DS;
+    };
+
+    template<>
+    struct p_Element_Types<3> {
+        typedef uint8_t U;
+        typedef int8_t S;
+        typedef uint16_t DU;
+        typedef int16_t DS;
+    };
+
+    template<size_t size, bool sig>
+    class p_Array_Integer_Base;
+
+    template<size_t size, bool sig>
+    class p_Array_Integer_Impl;
+
+    template<size_t size, bool sig>
+    struct p_Integer_Impl <size, sig, p_IType::array> {
+        typedef p_Array_Integer_Impl<size, sig> type;
+    };
+
+    template<size_t size>
+    class p_Array_Integer_Base<size, false> {
+    private:
+        typedef p_Element_Types<size & 3> ET;
+        typedef typename ET::S S;
+        typedef typename ET::U U;
+        typedef typename ET::DS DS;
+        typedef typename ET::DU DU;
+        typedef p_Array_Integer_Base I;
+        typedef p_SHType<size> M;
+        constexpr static M shdivider = size * 8;
+        constexpr static size_t length = size / sizeof (U);
+        template<typename Tp, Tp... values>
+        using A = p_i_seq::array_t<Tp, values...>;
+        template<size_t len>
+        using AT = p_i_seq::v_array_t<U, len>;
+        AT<length> data;
+
+    public:
+
+        constexpr inline p_Array_Integer_Base() = default;
+
+    private:
+
+        template<size_t a_len>
+        constexpr inline static U value_for_index(
+                AT<a_len> arr, size_t index) {
+            return index < a_len ? arr[index] : U(0);
+        }
+
+        template<size_t a_len, size_t... index>
+        constexpr inline static AT< length> set_h(
+                AT< a_len> arr, A<size_t, index...>) {
+            return {value_for_index(arr, index)...};
+        }
+
+    public:
+
+        template<typename... Tp>
+        constexpr explicit inline p_Array_Integer_Base(Tp... arr) :
+        data(set_h(AT<sizeof...(Tp)>{U(arr)...},
+        p_i_seq::make_array<size_t, 0, length>())) { }
+
+        template<size_t size2, bool sig2>
+        friend class p_Array_Integer_Impl;
+
+        template<size_t size2, bool sig2>
+        friend class Integer;
+    };
+
+    template<size_t size, bool sig>
+    class p_Array_Integer_Impl : p_Array_Integer_Base<size, sig> {
+    private:
+        typedef p_Array_Integer_Base<size, sig> T;
+        typedef p_Array_Integer_Impl<size, sig> I;
+        typedef p_Array_Integer_Impl<size, false> UI;
+        typedef p_Array_Integer_Impl<size, true> SI;
+        typedef typename T::S S;
+        typedef typename T::U U;
+        typedef typename T::DS DS;
+        typedef typename T::DU DU;
+        typedef typename T::M M;
+        template<typename Tp, Tp... values>
+        using A = p_i_seq::array_t<Tp, values...>;
+        template<size_t len>
+        using AT = p_i_seq::v_array_t<U, len>;
+
+    public:
+        using T::T;
+
+        constexpr inline p_Array_Integer_Impl(const T &obj) : T(obj) { }
+
+        void printv(std::ostream &out) {
+            out << std::hex;
+            size_t i = T::length;
+            out << uint32_t(T::data[--i]);
+            do {
+                out << ", ";
+                out << uint32_t(T::data[--i]);
+            } while (i > 0);
+        }
+
+    private:
+
+        /*constexpr inline I p1() const {
+            return p1_helper(T::low.p1(), T::high);
+        }*/
+
+    public:
+
+        constexpr inline I operator+() const {
+            return *this;
+        }
+
+        /*constexpr inline I operator-() const {
+            return (~(*this)).p1();
+        }*/
+
+    private:
+
+        template<size_t... index>
+        constexpr inline static bool isZero_h(const I &v, A<size_t, index...>) {
+            bool out = true;
+            p_i_seq::unused_array<bool, sizeof...(index)>({(out &= (v.data[index] == 0))...});
+            return out;
+        }
+
+    public:
+
+        constexpr inline bool isZero() const {
+            return isZero_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
+        };
+
+    private:
+
+        template<size_t... index>
+        constexpr inline static I neg_h(const I &v, A<size_t, index...>) {
+            return I((~v.data[index])...);
+        }
+
+    public:
+
+        constexpr inline I operator~() const {
+            return neg_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
+        }
+
+    private:
+
+        template<size_t... index>
+        constexpr inline static I or_h(const I &v1, const I &v2, A<size_t, index...>) {
+            return I((v1.data[index] | v2.data[index])...);
+        }
+
+        template<size_t... index>
+        constexpr inline static I and_h(const I &v1, const I &v2, A<size_t, index...>) {
+            return I((v1.data[index] & v2.data[index])...);
+        }
+
+        template<size_t... index>
+        constexpr inline static I xor_h(const I &v1, const I &v2, A<size_t, index...>) {
+            return I((v1.data[index] ^ v2.data[index])...);
+        }
+
+    public:
+
+        constexpr inline I operator|(const I &v2) const {
+            return or_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
+        }
+
+        constexpr inline I operator&(const I &v2) const {
+            return and_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
+        }
+
+        constexpr inline I operator^(const I &v2) const {
+            return xor_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
+        }
+
+        template<size_t size2, bool sig2>
+        friend class Integer;
+    };
+
     template<typename U, typename S, bool sig, typename V, p_enable_if(sig)>
     constexpr inline S p_castUS(V value) {
         return S(value);
@@ -958,42 +1230,188 @@ namespace JIO {
         return ~p_min_value<T, sig>();
     }
 
-    template<size_t size2, typename UI = Integer<size2, false>,
-    p_enable_if(p_getIntegerType(size2) == pow2)>
-    constexpr inline std::pair<UI, UI> p_divremUnsigned(
-            const Integer<size2, false> &x, const Integer<size2, false> &y) {
-        if (y.isZero()) {
-            throw std::runtime_error("Division by zero");
-        }
-        size_t xZeros = x.numberOfLeadingZeros();
-        size_t yZeros = y.numberOfLeadingZeros();
-        if (yZeros < xZeros) {
-            return std::pair<UI, UI>(UI::ZERO(), x);
-        }
-        size_t diff = yZeros - xZeros;
-        UI nx = x, ny = y << diff, out = UI::ZERO();
-        for (size_t i = 0; i <= diff; i++) {
-            bool bit = false;
-            if (nx >= ny) {
-                nx -= ny;
-                bit = true;
+    template<size_t size, typename UI = Integer<size, false>,
+    p_enable_if(p_getIntegerType(size) == pow2)>
+    constexpr inline UI p_udivrem(const Integer<size, false> &a,
+            const Integer<size, false> &b, Integer<size, false> *rem) {
+        constexpr size_t n_word_bits = size * 8;
+        constexpr size_t n_half_bits = size * 4;
+        UI q; // = UI::ZERO();
+        UI r; // = UI::ZERO();
+        size_t sr = 0;
+        // special cases, X is unknown, K != 0
+        if (a.uhigh() == 0) {
+            if (b.uhigh() == 0) {
+                // 0 X
+                // ---
+                // 0 X
+                if (rem) {
+                    rem->uhigh() = 0;
+                    return divrem(a.ulow(), b.ulow(), &(rem->ulow()));
+                }
+                return a.ulow() / b.ulow();
             }
-            ny >>= 1;
-            UI::leftShiftOneBit(out, bit);
+            // 0 X
+            // ---
+            // K X
+            if (rem)
+                *rem = a.ulow();
+            return 0;
         }
-        return std::pair<UI, UI>(out, nx);
+        // a.uhigh() != 0
+        if (b.ulow() == 0) {
+            if (b.uhigh() == 0) {
+                // K X
+                // ---
+                // 0 0
+                if (rem) {
+                    *rem = a.uhigh() % b.ulow();
+                }
+                return a.uhigh() / b.ulow();
+            }
+            // b.uhigh() != 0
+            if (a.ulow() == 0) {
+                // K 0
+                // ---
+                // K 0
+                if (rem) {
+                    rem->ulow() = 0;
+                    return divrem(a.uhigh(), b.uhigh(), &(rem->uhigh()));
+                }
+                return a.uhigh() / b.uhigh();
+            }
+            // K K
+            // ---
+            // K 0
+            if (isOneBit(b.uhigh())) /* if b is a power of 2 */ {
+                if (rem) {
+                    r.ulow() = a.ulow();
+                    r.uhigh() = a.uhigh() & (b.uhigh() - 1);
+                    *rem = r;
+                }
+                return a.uhigh() >> b.uhigh().numberOfTrailingZeros();
+            }
+            // K K
+            // ---
+            // K 0
+            sr = b.uhigh().numberOfLeadingZeros() - a.uhigh().numberOfLeadingZeros();
+            // 0 <= sr <= n_half_bits - 2 or sr large
+            if (sr > n_half_bits - 2) {
+                if (rem) {
+                    *rem = a;
+                }
+                return 0;
+            }
+            ++sr;
+            // 1 <= sr <= n_half_bits - 1
+            // q = a << (n_word_bits - sr);
+            q.ulow() = 0;
+            q.uhigh() = a.ulow() << (n_half_bits - sr);
+
+            r = a >> sr;
+        } else /* b.ulow() != 0 */ {
+            if (b.uhigh() == 0) {
+                // K X
+                // ---
+                // 0 K
+                if (isOneBit(b.ulow())) /* if b is a power of 2 */ {
+                    if (rem) {
+                        *rem = a.ulow() & (b.ulow() - 1);
+                    }
+                    if (b.ulow() == 1) {
+                        return a;
+                    }
+                    sr = b.ulow().numberOfTrailingZeros();
+                    return a >> sr;
+                }
+                // K X
+                // ---
+                // 0 K
+                sr = 1 + n_half_bits + b.ulow().numberOfLeadingZeros() -
+                        a.uhigh().numberOfLeadingZeros();
+                // 2 <= sr <= n_word_bits - 1
+                // q = a << (n_word_bits - sr);
+                // r = a >> sr;
+                if (sr == n_half_bits) {
+                    q.ulow() = 0;
+                    q.uhigh() = a.ulow();
+                    r.uhigh() = 0;
+                    r.ulow() = a.uhigh();
+                } else if (sr < n_half_bits) /* 2 <= sr <= n_half_bits - 1 */ {
+                    q.ulow() = 0;
+                    q.uhigh() = a.ulow() << (n_half_bits - sr);
+                    r = a >> sr;
+                } else /* n_half_bits + 1 <= sr <= n_word_bits - 1 */ {
+                    q = a << (n_word_bits - sr);
+                    r.uhigh() = 0;
+                    r.ulow() = a.uhigh() >> (sr - n_half_bits);
+                }
+            } else {
+                // K X
+                // ---
+                // K K
+                sr = b.uhigh().numberOfLeadingZeros() - a.uhigh().numberOfLeadingZeros();
+                // 0 <= sr <= n_half_bits - 1 or sr large
+                if (sr > n_half_bits - 1) {
+                    if (rem)
+                        *rem = a;
+                    return 0;
+                }
+                ++sr;
+                // 1 <= sr <= n_half_bits
+                // q = a << (n_word_bits - sr);
+                // r = a >> sr;
+                q.ulow() = 0;
+                if (sr == n_half_bits) {
+                    q.uhigh() = a.ulow();
+                    r.uhigh() = 0;
+                    r.ulow() = a.uhigh();
+                } else {
+                    r = a >> sr;
+                    q.uhigh() = a.ulow() << (n_half_bits - sr);
+                }
+            }
+        }
+        // Not a special case
+        // q and r are initialized with:
+        // q = a << (n_word_bits - sr);
+        // r = a >> sr;
+        // 1 <= sr <= n_word_bits - 1
+        bool carry = 0;
+        for (; sr > 0; --sr) {
+            // r:q = ((r:q)  << 1) | carry
+            UI::leftShiftOneBit(r, q.isSNegative());
+            UI::leftShiftOneBit(q, carry);
+
+            carry = false;
+            if (r >= b) {
+                r -= b;
+                carry = true;
+            }
+        }
+        UI::leftShiftOneBit(q, carry);
+        if (rem) {
+            *rem = r;
+        }
+        return q;
     }
 
-    template<size_t size2, typename UI = Integer<size2, false>,
-    typename SI = Integer<size2, true>,
-    p_enable_if(p_getIntegerType(size2) == pow2)>
-    constexpr inline std::pair<SI, SI> p_divremSigned(
-            const Integer<size2, true> &x, const Integer<size2, true> &y) {
+    template<size_t size, typename UI = Integer<size, false>,
+    typename SI = Integer<size, true>,
+    p_enable_if(p_getIntegerType(size) == pow2)>
+    constexpr inline SI p_sdivrem(const Integer<size, true> &x,
+            const Integer<size, true> &y, Integer<size, true> *rem) {
         bool xNeg = x.isNegative();
         bool yNeg = y.isNegative();
-        std::pair<UI, UI> tmp = p_divremUnsigned((xNeg ? -x : x).u(), (yNeg ? -y : y).u());
-        return std::pair<SI, SI>(xNeg ^ yNeg ? -tmp.first : tmp.first,
-                xNeg ? -tmp.second : tmp.second);
+        UI q;
+        if (rem) {
+            UI r;
+            q = p_udivrem<size>(xNeg ? -x : x, yNeg ? -y : y, &r);
+            *rem = xNeg ? -r : r;
+        } else {
+            q = p_udivrem<size>(xNeg ? -x : x, yNeg ? -y : y, nullptr);
+        }
+        return xNeg ^ yNeg ? -q : q;
     }
 
     template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
@@ -1003,9 +1421,12 @@ namespace JIO {
     struct p_divrem_h<size, sig, native> {
 
         template<typename I = Integer<size, sig>>
-        constexpr inline static std::pair<I, I> divrem(
-                const I &x, const I &y) {
-            return std::pair<I, I>(x / y, x % y);
+        constexpr inline static I divrem(
+                const I &x, const I &y, I *rem) {
+            if (rem) {
+                *rem = x % y;
+            }
+            return x / y;
         }
     };
 
@@ -1013,9 +1434,9 @@ namespace JIO {
     struct p_divrem_h<size, false, pow2> {
 
         template<typename UI = Integer<size, false >>
-        constexpr inline static std::pair<UI, UI> divrem(
-                const UI &x, const UI &y) {
-            return p_divremUnsigned(x, y);
+        constexpr inline static UI divrem(
+                const UI &x, const UI &y, UI *rem) {
+            return p_udivrem(x, y, rem);
         }
     };
 
@@ -1023,18 +1444,22 @@ namespace JIO {
     struct p_divrem_h<size, true, pow2> {
 
         template<typename SI = Integer<size, true >>
-        constexpr inline static std::pair<SI, SI> divrem(
-                const SI &x, const SI &y) {
-            return p_divremSigned(x, y);
+        constexpr inline static SI divrem(
+                const SI &x, const SI &y, SI *rem) {
+            return p_sdivrem(x, y, rem);
         }
     };
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    size_t size = max(size1, size2), bool sig = sig1 && sig2,
-    typename R = Integer<size, sig>>
-    constexpr inline std::pair<R, R> divrem(const Integer<size1, sig1> &v1,
-            const Integer<size2, sig2> &v2) {
-        return p_divrem_h<size, sig>::divrem(R(v1), R(v2));
+    template<size_t size, bool sig>
+    constexpr inline Integer<size, sig> divrem(const Integer<size, sig> &x,
+            const Integer<size, sig> &y) {
+        return p_divrem_h<size, sig>::divrem(x, y, (Integer<size, sig>*)nullptr);
+    }
+
+    template<size_t size, bool sig>
+    constexpr inline Integer<size, sig> divrem(const Integer<size, sig> &x,
+            const Integer<size, sig> &y, Integer<size, sig> *rem) {
+        return p_divrem_h<size, sig>::divrem(x, y, rem);
     }
 
     template<size_t size, bool sig>
