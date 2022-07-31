@@ -844,12 +844,14 @@ namespace JIO {
 
         template<typename II = Integer<half * 2, sig>>
         constexpr inline I operator/(const I &other) const {
-            return divrem(II(*this), II(other)).first.value;
+            return divrem(II(*this), II(other)).value;
         }
 
         template<typename II = Integer<half * 2, sig>>
         constexpr inline I operator%(const I &other) const {
-            return divrem(II(*this), II(other)).second.value;
+            II rem;
+            divrem(II(*this), II(other), &rem);
+            return rem.value;
         }
 
         constexpr inline I operator+(const I &other) const {
@@ -958,42 +960,188 @@ namespace JIO {
         return ~p_min_value<T, sig>();
     }
 
-    template<size_t size2, typename UI = Integer<size2, false>,
-    p_enable_if(p_getIntegerType(size2) == pow2)>
-    constexpr inline std::pair<UI, UI> p_divremUnsigned(
-            const Integer<size2, false> &x, const Integer<size2, false> &y) {
-        if (y.isZero()) {
-            throw std::runtime_error("Division by zero");
-        }
-        size_t xZeros = x.numberOfLeadingZeros();
-        size_t yZeros = y.numberOfLeadingZeros();
-        if (yZeros < xZeros) {
-            return std::pair<UI, UI>(UI::ZERO(), x);
-        }
-        size_t diff = yZeros - xZeros;
-        UI nx = x, ny = y << diff, out = UI::ZERO();
-        for (size_t i = 0; i <= diff; i++) {
-            bool bit = false;
-            if (nx >= ny) {
-                nx -= ny;
-                bit = true;
+    template<size_t size, typename UI = Integer<size, false>,
+    p_enable_if(p_getIntegerType(size) == pow2)>
+    constexpr inline UI p_udivrem(const Integer<size, false> &a,
+            const Integer<size, false> &b, Integer<size, false> *rem) {
+        constexpr size_t n_word_bits = size * 8;
+        constexpr size_t n_half_bits = size * 4;
+        UI q; // = UI::ZERO();
+        UI r; // = UI::ZERO();
+        size_t sr = 0;
+        // special cases, X is unknown, K != 0
+        if (a.uhigh() == 0) {
+            if (b.uhigh() == 0) {
+                // 0 X
+                // ---
+                // 0 X
+                if (rem) {
+                    rem->uhigh() = 0;
+                    return divrem(a.ulow(), b.ulow(), &(rem->ulow()));
+                }
+                return a.ulow() / b.ulow();
             }
-            ny >>= 1;
-            UI::leftShiftOneBit(out, bit);
+            // 0 X
+            // ---
+            // K X
+            if (rem)
+                *rem = a.ulow();
+            return 0;
         }
-        return std::pair<UI, UI>(out, nx);
+        // a.uhigh() != 0
+        if (b.ulow() == 0) {
+            if (b.uhigh() == 0) {
+                // K X
+                // ---
+                // 0 0
+                if (rem) {
+                    *rem = a.uhigh() % b.ulow();
+                }
+                return a.uhigh() / b.ulow();
+            }
+            // b.uhigh() != 0
+            if (a.ulow() == 0) {
+                // K 0
+                // ---
+                // K 0
+                if (rem) {
+                    rem->ulow() = 0;
+                    return divrem(a.uhigh(), b.uhigh(), &(rem->uhigh()));
+                }
+                return a.uhigh() / b.uhigh();
+            }
+            // K K
+            // ---
+            // K 0
+            if (isOneBit(b.uhigh())) /* if b is a power of 2 */ {
+                if (rem) {
+                    r.ulow() = a.ulow();
+                    r.uhigh() = a.uhigh() & (b.uhigh() - 1);
+                    *rem = r;
+                }
+                return a.uhigh() >> b.uhigh().numberOfTrailingZeros();
+            }
+            // K K
+            // ---
+            // K 0
+            sr = b.uhigh().numberOfLeadingZeros() - a.uhigh().numberOfLeadingZeros();
+            // 0 <= sr <= n_half_bits - 2 or sr large
+            if (sr > n_half_bits - 2) {
+                if (rem) {
+                    *rem = a;
+                }
+                return 0;
+            }
+            ++sr;
+            // 1 <= sr <= n_half_bits - 1
+            // q = a << (n_word_bits - sr);
+            q.ulow() = 0;
+            q.uhigh() = a.ulow() << (n_half_bits - sr);
+
+            r = a >> sr;
+        } else /* b.ulow() != 0 */ {
+            if (b.uhigh() == 0) {
+                // K X
+                // ---
+                // 0 K
+                if (isOneBit(b.ulow())) /* if b is a power of 2 */ {
+                    if (rem) {
+                        *rem = a.ulow() & (b.ulow() - 1);
+                    }
+                    if (b.ulow() == 1) {
+                        return a;
+                    }
+                    sr = b.ulow().numberOfTrailingZeros();
+                    return a >> sr;
+                }
+                // K X
+                // ---
+                // 0 K
+                sr = 1 + n_half_bits + b.ulow().numberOfLeadingZeros() -
+                        a.uhigh().numberOfLeadingZeros();
+                // 2 <= sr <= n_word_bits - 1
+                // q = a << (n_word_bits - sr);
+                // r = a >> sr;
+                if (sr == n_half_bits) {
+                    q.ulow() = 0;
+                    q.uhigh() = a.ulow();
+                    r.uhigh() = 0;
+                    r.ulow() = a.uhigh();
+                } else if (sr < n_half_bits) /* 2 <= sr <= n_half_bits - 1 */ {
+                    q.ulow() = 0;
+                    q.uhigh() = a.ulow() << (n_half_bits - sr);
+                    r = a >> sr;
+                } else /* n_half_bits + 1 <= sr <= n_word_bits - 1 */ {
+                    q = a << (n_word_bits - sr);
+                    r.uhigh() = 0;
+                    r.ulow() = a.uhigh() >> (sr - n_half_bits);
+                }
+            } else {
+                // K X
+                // ---
+                // K K
+                sr = b.uhigh().numberOfLeadingZeros() - a.uhigh().numberOfLeadingZeros();
+                // 0 <= sr <= n_half_bits - 1 or sr large
+                if (sr > n_half_bits - 1) {
+                    if (rem)
+                        *rem = a;
+                    return 0;
+                }
+                ++sr;
+                // 1 <= sr <= n_half_bits
+                // q = a << (n_word_bits - sr);
+                // r = a >> sr;
+                q.ulow() = 0;
+                if (sr == n_half_bits) {
+                    q.uhigh() = a.ulow();
+                    r.uhigh() = 0;
+                    r.ulow() = a.uhigh();
+                } else {
+                    r = a >> sr;
+                    q.uhigh() = a.ulow() << (n_half_bits - sr);
+                }
+            }
+        }
+        // Not a special case
+        // q and r are initialized with:
+        // q = a << (n_word_bits - sr);
+        // r = a >> sr;
+        // 1 <= sr <= n_word_bits - 1
+        bool carry = 0;
+        for (; sr > 0; --sr) {
+            // r:q = ((r:q)  << 1) | carry
+            UI::leftShiftOneBit(r, q.isSNegative());
+            UI::leftShiftOneBit(q, carry);
+
+            carry = false;
+            if (r >= b) {
+                r -= b;
+                carry = true;
+            }
+        }
+        UI::leftShiftOneBit(q, carry);
+        if (rem) {
+            *rem = r;
+        }
+        return q;
     }
 
-    template<size_t size2, typename UI = Integer<size2, false>,
-    typename SI = Integer<size2, true>,
-    p_enable_if(p_getIntegerType(size2) == pow2)>
-    constexpr inline std::pair<SI, SI> p_divremSigned(
-            const Integer<size2, true> &x, const Integer<size2, true> &y) {
+    template<size_t size, typename UI = Integer<size, false>,
+    typename SI = Integer<size, true>,
+    p_enable_if(p_getIntegerType(size) == pow2)>
+    constexpr inline SI p_sdivrem(const Integer<size, true> &x,
+            const Integer<size, true> &y, Integer<size, true> *rem) {
         bool xNeg = x.isNegative();
         bool yNeg = y.isNegative();
-        std::pair<UI, UI> tmp = p_divremUnsigned((xNeg ? -x : x).u(), (yNeg ? -y : y).u());
-        return std::pair<SI, SI>(xNeg ^ yNeg ? -tmp.first : tmp.first,
-                xNeg ? -tmp.second : tmp.second);
+        UI q;
+        if (rem) {
+            UI r;
+            q = p_udivrem<size>(xNeg ? -x : x, yNeg ? -y : y, &r);
+            *rem = xNeg ? -r : r;
+        } else {
+            q = p_udivrem<size>(xNeg ? -x : x, yNeg ? -y : y, nullptr);
+        }
+        return xNeg ^ yNeg ? -q : q;
     }
 
     template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
@@ -1003,9 +1151,12 @@ namespace JIO {
     struct p_divrem_h<size, sig, native> {
 
         template<typename I = Integer<size, sig>>
-        constexpr inline static std::pair<I, I> divrem(
-                const I &x, const I &y) {
-            return std::pair<I, I>(x / y, x % y);
+        constexpr inline static I divrem(
+                const I &x, const I &y, I *rem) {
+            if (rem) {
+                *rem = x % y;
+            }
+            return x / y;
         }
     };
 
@@ -1013,9 +1164,9 @@ namespace JIO {
     struct p_divrem_h<size, false, pow2> {
 
         template<typename UI = Integer<size, false >>
-        constexpr inline static std::pair<UI, UI> divrem(
-                const UI &x, const UI &y) {
-            return p_divremUnsigned(x, y);
+        constexpr inline static UI divrem(
+                const UI &x, const UI &y, UI *rem) {
+            return p_udivrem(x, y, rem);
         }
     };
 
@@ -1023,18 +1174,22 @@ namespace JIO {
     struct p_divrem_h<size, true, pow2> {
 
         template<typename SI = Integer<size, true >>
-        constexpr inline static std::pair<SI, SI> divrem(
-                const SI &x, const SI &y) {
-            return p_divremSigned(x, y);
+        constexpr inline static SI divrem(
+                const SI &x, const SI &y, SI *rem) {
+            return p_sdivrem(x, y, rem);
         }
     };
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    size_t size = max(size1, size2), bool sig = sig1 && sig2,
-    typename R = Integer<size, sig>>
-    constexpr inline std::pair<R, R> divrem(const Integer<size1, sig1> &v1,
-            const Integer<size2, sig2> &v2) {
-        return p_divrem_h<size, sig>::divrem(R(v1), R(v2));
+    template<size_t size, bool sig>
+    constexpr inline Integer<size, sig> divrem(const Integer<size, sig> &x,
+            const Integer<size, sig> &y) {
+        return p_divrem_h<size, sig>::divrem(x, y, (Integer<size, sig>*)nullptr);
+    }
+
+    template<size_t size, bool sig>
+    constexpr inline Integer<size, sig> divrem(const Integer<size, sig> &x,
+            const Integer<size, sig> &y, Integer<size, sig> *rem) {
+        return p_divrem_h<size, sig>::divrem(x, y, rem);
     }
 
     template<size_t size, bool sig>
