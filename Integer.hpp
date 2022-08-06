@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <limits>
 #include <cstddef>
 #include <stdexcept>
 #include <iostream>
@@ -2466,6 +2467,79 @@ namespace JIO {
     }
 
 #undef p_enable_if
+}
+
+namespace std {
+
+    template<size_t size, bool sig>
+    struct numeric_limits< JIO::Integer<size, sig> > {
+        constexpr static bool is_specialized = true;
+
+        constexpr static JIO::Integer<size, sig> min() noexcept {
+            return JIO::Integer<size, sig>::MIN_VALUE();
+        }
+
+        constexpr static JIO::Integer<size, sig> max() noexcept {
+            return JIO::Integer<size, sig>::MAX_VALUE();
+        }
+
+        constexpr static JIO::Integer<size, sig> lowest() noexcept {
+            return min();
+        }
+
+        constexpr static int digits = size * 8 - sig;
+        constexpr static int digits10 = int(JIO::wmultiply<8>(digits,
+                0x4d104d427de7fbcbULL) / 0xffffffffffffffffULL);
+        constexpr static int max_digits10 = 0;
+        constexpr static bool is_signed = sig;
+        constexpr static bool is_integer = true;
+        constexpr static bool is_exact = true;
+        constexpr static int radix = 2;
+
+        constexpr static int min_exponent = 0;
+        constexpr static int min_exponent10 = 0;
+        constexpr static int max_exponent = 0;
+        constexpr static int max_exponent10 = 0;
+
+        constexpr static bool has_infinity = false;
+        constexpr static bool has_quiet_NaN = false;
+        constexpr static bool has_signaling_NaN = false;
+        constexpr static bool has_denorm_loss = false;
+
+        constexpr static bool is_iec559 = false;
+        constexpr static bool is_bounded = true;
+        constexpr static bool is_modulo = true;
+
+        constexpr static bool traps = true;
+        constexpr static bool tinyness_before = false;
+
+        constexpr static std::float_denorm_style has_denorm = std::denorm_absent;
+        constexpr static std::float_round_style round_style = std::round_toward_zero;
+
+        constexpr static JIO::Integer<size, sig> epsilon() noexcept {
+            return 0;
+        }
+
+        constexpr static JIO::Integer<size, sig> round_error() noexcept {
+            return 0;
+        }
+
+        constexpr static JIO::Integer<size, sig> denorm_min() noexcept {
+            return 0;
+        }
+
+        constexpr static JIO::Integer<size, sig> infinity() noexcept {
+            return 0;
+        }
+
+        constexpr static JIO::Integer<size, sig> quiet_NaN() noexcept {
+            return 0;
+        }
+
+        constexpr static JIO::Integer<size, sig> signaling_NaN() noexcept {
+            return 0;
+        }
+    };
 }
 
 #endif /* INTEGER_HPP */
