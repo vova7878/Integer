@@ -1228,8 +1228,8 @@ namespace JIO {
             const Integer<size, false> &b, Integer<size, false> *rem) {
         constexpr size_t n_word_bits = size * 8;
         constexpr size_t n_half_bits = size * 4;
-        UI q; // = UI::ZERO();
-        UI r; // = UI::ZERO();
+        UI q = UI::ZERO();
+        UI r = UI::ZERO();
         size_t sr = 0;
         // special cases, X is unknown, K != 0
         if (a.uhigh() == 0) {
