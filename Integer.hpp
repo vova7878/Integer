@@ -626,27 +626,31 @@ namespace JIO {
         }
 
         constexpr inline bool operator>(const I &other) const {
-            return (high > other.high) ? true :
-                    ((high < other.high) ? false :
-                    (low > other.low));
+            if (high == other.high) {
+                return low > other.low;
+            }
+            return high > other.high;
         }
 
         constexpr inline bool operator<(const I &other) const {
-            return (high < other.high) ? true :
-                    ((high > other.high) ? false :
-                    (low < other.low));
+            if (high == other.high) {
+                return low < other.low;
+            }
+            return high < other.high;
         }
 
         constexpr inline bool operator>=(const I &other) const {
-            return (high > other.high) ? true :
-                    ((high < other.high) ? false :
-                    (low >= other.low));
+            if (high == other.high) {
+                return low > other.low;
+            }
+            return high >= other.high;
         }
 
         constexpr inline bool operator<=(const I &other) const {
-            return (high < other.high) ? true :
-                    ((high > other.high) ? false :
-                    (low <= other.low));
+            if (high == other.high) {
+                return low < other.low;
+            }
+            return high <= other.high;
         }
 
         constexpr inline I operator>>(const M other) const {
@@ -701,27 +705,31 @@ namespace JIO {
         };
 
         constexpr inline bool operator>(const I &other) const {
-            return (S(high) > S(other.high)) ? true :
-                    ((S(high) < S(other.high)) ? false :
-                    (low > other.low));
+            if (high == other.high) {
+                return low > other.low;
+            }
+            return S(high) > S(other.high);
         }
 
         constexpr inline bool operator<(const I &other) const {
-            return (S(high) < S(other.high)) ? true :
-                    ((S(high) > S(other.high)) ? false :
-                    (low < other.low));
+            if (high == other.high) {
+                return low < other.low;
+            }
+            return S(high) < S(other.high);
         }
 
         constexpr inline bool operator>=(const I &other) const {
-            return (S(high) > S(other.high)) ? true :
-                    ((S(high) < S(other.high)) ? false :
-                    (low >= other.low));
+            if (high == other.high) {
+                return low > other.low;
+            }
+            return S(high) >= S(other.high);
         }
 
         constexpr inline bool operator<=(const I &other) const {
-            return (S(high) < S(other.high)) ? true :
-                    ((S(high) > S(other.high)) ? false :
-                    (low <= other.low));
+            if (high == other.high) {
+                return low < other.low;
+            }
+            return S(high) <= S(other.high);
         }
 
         constexpr inline I operator>>(const M other) const {
@@ -2523,6 +2531,12 @@ namespace JIO {
     constexpr inline T& operator>>=(T &v1, const Integer<size1, sig1> &v2) {
         return v1 = T(Integer<sizeof (T), p_is_signed<T>()>(v1) >> v2);
     }
+
+    template<size_t size>
+    using U = Integer<size, false>;
+
+    template<size_t size>
+    using S = Integer<size, true>;
 
 #undef p_enable_if
 }
