@@ -274,6 +274,42 @@ namespace JIO {
         };
 
         template<size_t size>
+        struct divrem_h<size, 1> {
+
+            constexpr inline static I div(const I &a, const I &b) {
+                if ((a.value == U(0x80)) && (b.value == U(-1))) {
+                    return I(0x80);
+                }
+                return divrem_h<size, 0>::div(a, b);
+            }
+
+            constexpr inline static I rem(const I &a, const I &b) {
+                if ((a.value == U(0x80)) && (b.value == U(-1))) {
+                    return I(0);
+                }
+                return divrem_h<size, 0>::rem(a, b);
+            }
+        };
+
+        template<size_t size>
+        struct divrem_h<size, 2> {
+
+            constexpr inline static I div(const I &a, const I &b) {
+                if ((a.value == U(0x8000)) && (b.value == U(-1))) {
+                    return I(0x8000);
+                }
+                return divrem_h<size, 0>::div(a, b);
+            }
+
+            constexpr inline static I rem(const I &a, const I &b) {
+                if ((a.value == U(0x8000)) && (b.value == U(-1))) {
+                    return I(0);
+                }
+                return divrem_h<size, 0>::rem(a, b);
+            }
+        };
+
+        template<size_t size>
         struct divrem_h<size, 4> {
 
             constexpr inline static I div(const I &a, const I &b) {
