@@ -26,7 +26,6 @@
 #include <cstdint>
 #include <type_traits>
 #include <cstddef>
-#include <stdexcept>
 #include <iostream>
 
 // -std=c++14
@@ -210,16 +209,10 @@ namespace JIO {
         }
 
         constexpr inline I operator/(const I &other) const {
-            if (other.value == 0) {
-                throw std::runtime_error("Division by zero");
-            }
             return p_Integer_U(value / other.value);
         }
 
         constexpr inline I operator%(const I &other) const {
-            if (other.value == 0) {
-                throw std::runtime_error("Division by zero");
-            }
             return p_Integer_U(value % other.value);
         }
 
@@ -272,16 +265,10 @@ namespace JIO {
         struct divrem_h {
 
             constexpr inline static I div(const I &a, const I &b) {
-                if (b.value == 0) {
-                    throw std::runtime_error("Division by zero");
-                }
                 return I(S(a.value) / S(b.value));
             }
 
             constexpr inline static I rem(const I &a, const I &b) {
-                if (b.value == 0) {
-                    throw std::runtime_error("Division by zero");
-                }
                 return I(S(a.value) % S(b.value));
             }
         };
