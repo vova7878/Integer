@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <tuple>
 #include <cstddef>
 #include <stdexcept>
 #include <iostream>
@@ -988,6 +989,41 @@ namespace JIO {
         constexpr inline typename seq_h<T, f, l>::type make_array() {
             return {};
         }
+
+        struct any {
+
+            template<typename T>
+            constexpr inline any(T) { }
+        };
+
+        template<size_t... i1>
+        struct p_wrapper {
+            template<size_t>
+            using any_h = any;
+
+            template<size_t... i2, typename T>
+            constexpr inline static T
+            get_value(any_h<i1>..., T value, any_h<i2>...) {
+                return value;
+            }
+        };
+
+        template<size_t... i1, size_t... i2, typename... Tp>
+        constexpr inline auto p_element_h(array_t<size_t, i1...>,
+                array_t<size_t, i2...>, Tp... arr) {
+            return p_wrapper<i1...>::template get_value<i2...>(arr...);
+        };
+
+        template<size_t index, typename... Tp>
+        constexpr inline auto element(Tp... arr) {
+            return p_element_h(make_array<size_t, 0, index>(),
+                    make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
+        };
+
+        template<typename... Tp>
+        constexpr inline auto last_element(Tp... arr) {
+            return element<sizeof...(arr) - 1 > (arr...);
+        };
     }
 
     template<int>
@@ -1062,14 +1098,14 @@ namespace JIO {
 
         template<size_t a_len>
         constexpr inline static U value_for_index(
-                AT<a_len> arr, size_t index) {
-            return index < a_len ? arr[index] : U(0);
+                AT<a_len> arr, size_t index, U fill) {
+            return index < a_len ? arr[index] : fill;
         }
 
         template<size_t a_len, size_t... index>
-        constexpr inline static AT< length> set_h(
-                AT< a_len> arr, A<size_t, index...>) {
-            return {value_for_index(arr, index)...};
+        constexpr inline static AT<length> set_h(
+                AT< a_len> arr, A<size_t, index...>, U fill) {
+            return {value_for_index(arr, index, fill)...};
         }
 
     public:
@@ -1077,7 +1113,8 @@ namespace JIO {
         template<typename... Tp>
         constexpr explicit inline p_Array_Integer_Base(Tp... arr) :
         data(set_h(AT<sizeof...(Tp)>{U(arr)...},
-        p_i_seq::make_array<size_t, 0, length>())) { }
+        p_i_seq::make_array<size_t, 0, length>(),
+                (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
 
         template<size_t size2, bool sig2>
         friend class p_Array_Integer_Impl;
