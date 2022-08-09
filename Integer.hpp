@@ -2532,12 +2532,6 @@ namespace JIO {
         return v1 = T(Integer<sizeof (T), p_is_signed<T>()>(v1) >> v2);
     }
 
-    template<size_t size>
-    using U = Integer<size, false>;
-
-    template<size_t size>
-    using S = Integer<size, true>;
-
 #undef p_enable_if
 }
 
