@@ -1093,25 +1093,25 @@ namespace JIO {
     };
 
     template<size_t size, bool sig>
-    class p_Array_Integer_Base;
+    class p_array_Integer_Base;
 
     template<size_t size, bool sig>
-    class p_Array_Integer_Impl;
+    class p_array_Integer_Impl;
 
     template<size_t size, bool sig>
     struct p_Integer_Impl <size, sig, p_IType::array> {
-        typedef p_Array_Integer_Impl<size, sig> type;
+        typedef p_array_Integer_Impl<size, sig> type;
     };
 
     template<size_t size>
-    class p_Array_Integer_Base<size, false> {
+    class p_array_Integer_Base<size, false> {
     private:
         typedef p_Element_Types<size & 3> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
         typedef typename ET::DS DS;
         typedef typename ET::DU DU;
-        typedef p_Array_Integer_Base I;
+        typedef p_array_Integer_Base I;
         typedef p_SHType<size> M;
         constexpr static M shdivider = size * 8;
         constexpr static size_t length = size / sizeof (U);
@@ -1123,7 +1123,7 @@ namespace JIO {
 
     public:
 
-        constexpr inline p_Array_Integer_Base() = default;
+        constexpr inline p_array_Integer_Base() = default;
 
     private:
 
@@ -1142,25 +1142,25 @@ namespace JIO {
     public:
 
         template<typename... Tp>
-        constexpr explicit inline p_Array_Integer_Base(Tp... arr) :
+        constexpr explicit inline p_array_Integer_Base(Tp... arr) :
         data(set_h(AT<sizeof...(Tp)>{U(arr)...},
         p_i_seq::make_array<size_t, 0, length>(),
                 (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
 
         template<size_t size2, bool sig2>
-        friend class p_Array_Integer_Impl;
+        friend class p_array_Integer_Impl;
 
         template<size_t size2, bool sig2>
         friend class Integer;
     };
 
     template<size_t size, bool sig>
-    class p_Array_Integer_Impl : p_Array_Integer_Base<size, sig> {
+    class p_array_Integer_Impl : p_array_Integer_Base<size, sig> {
     private:
-        typedef p_Array_Integer_Base<size, sig> T;
-        typedef p_Array_Integer_Impl<size, sig> I;
-        typedef p_Array_Integer_Impl<size, false> UI;
-        typedef p_Array_Integer_Impl<size, true> SI;
+        typedef p_array_Integer_Base<size, sig> T;
+        typedef p_array_Integer_Impl<size, sig> I;
+        typedef p_array_Integer_Impl<size, false> UI;
+        typedef p_array_Integer_Impl<size, true> SI;
         typedef typename T::S S;
         typedef typename T::U U;
         typedef typename T::DS DS;
@@ -1174,7 +1174,7 @@ namespace JIO {
     public:
         using T::T;
 
-        constexpr inline p_Array_Integer_Impl(const T &obj) : T(obj) { }
+        constexpr inline p_array_Integer_Impl(const T &obj) : T(obj) { }
 
         void printv(std::ostream &out) {
             out << std::hex;
@@ -1185,12 +1185,6 @@ namespace JIO {
                 out << uint32_t(T::data[--i]);
             } while (i > 0);
         }
-
-    private:
-
-        /*constexpr inline I p1() const {
-            return p1_helper(T::low.p1(), T::high);
-        }*/
 
     public:
 
@@ -2010,7 +2004,7 @@ namespace JIO {
         friend class p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
-        friend class p_Array_Integer_Impl;
+        friend class p_array_Integer_Impl;
     };
 
     template <typename T>
