@@ -162,7 +162,7 @@ namespace JIO {
     struct p_Integer_Impl;
 
     template<typename T>
-    struct p_Operators_Impl;
+    struct p_native_Integer_Impl;
 
     template<typename U, typename S>
     class p_Integer_S;
@@ -239,7 +239,7 @@ namespace JIO {
         template<size_t size, bool sig>
         friend class Integer;
 
-        friend p_Operators_Impl<p_Integer_U<U, S>>;
+        friend p_native_Integer_Impl<p_Integer_U<U, S>>;
     };
 
     template<typename UT, typename ST>
@@ -376,14 +376,14 @@ namespace JIO {
         template<size_t size, bool sig>
         friend class Integer;
 
-        friend p_Operators_Impl<p_Integer_S<U, S>>;
+        friend p_native_Integer_Impl<p_Integer_S<U, S>>;
     };
 
     template<typename T>
-    struct p_Operators_Impl : public T {
+    struct p_native_Integer_Impl : public T {
     private:
 
-        typedef p_Operators_Impl I;
+        typedef p_native_Integer_Impl I;
         typedef typename T::U U;
         typedef typename T::S S;
 
@@ -391,9 +391,9 @@ namespace JIO {
 
         using T::T;
 
-        constexpr inline p_Operators_Impl() noexcept = default;
+        constexpr inline p_native_Integer_Impl() noexcept = default;
 
-        constexpr inline p_Operators_Impl(const T &obj) noexcept : T(obj) { }
+        constexpr inline p_native_Integer_Impl(const T &obj) noexcept : T(obj) { }
 
         void printv(std::ostream &out) {
             out << std::hex << uint64_t(T::value) << std::dec;
@@ -507,50 +507,50 @@ namespace JIO {
 
     template<>
     struct p_Integer_Impl<1, false> {
-        typedef p_Operators_Impl<p_Integer_U<uint8_t, int8_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_U<uint8_t, int8_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<1, true> {
-        typedef p_Operators_Impl<p_Integer_S<uint8_t, int8_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_S<uint8_t, int8_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<2, false> {
-        typedef p_Operators_Impl<p_Integer_U<uint16_t, int16_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_U<uint16_t, int16_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<2, true> {
-        typedef p_Operators_Impl<p_Integer_S<uint16_t, int16_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_S<uint16_t, int16_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<4, false> {
-        typedef p_Operators_Impl<p_Integer_U<uint32_t, int32_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_U<uint32_t, int32_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<4, true> {
-        typedef p_Operators_Impl<p_Integer_S<uint32_t, int32_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_S<uint32_t, int32_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<8, false> {
-        typedef p_Operators_Impl<p_Integer_U<uint64_t, int64_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_U<uint64_t, int64_t>> type;
     };
 
     template<>
     struct p_Integer_Impl<8, true> {
-        typedef p_Operators_Impl<p_Integer_S<uint64_t, int64_t>> type;
+        typedef p_native_Integer_Impl<p_Integer_S<uint64_t, int64_t>> type;
     };
 
     template<size_t half, bool sig>
-    class p_Pow2_Integer_Impl;
+    class p_pow2_Integer_Impl;
 
     template<size_t size, bool sig>
     struct p_Integer_Impl <size, sig, p_IType::pow2> {
-        typedef p_Pow2_Integer_Impl<size / 2, sig> type;
+        typedef p_pow2_Integer_Impl<size / 2, sig> type;
     };
 
     template<size_t half, bool sig>
@@ -660,7 +660,7 @@ namespace JIO {
         }
 
         template<size_t size2, bool sig2>
-        friend class p_Pow2_Integer_Impl;
+        friend class p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
         friend class Integer;
@@ -739,19 +739,19 @@ namespace JIO {
         }
 
         template<size_t size2, bool sig2>
-        friend class p_Pow2_Integer_Impl;
+        friend class p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
         friend class Integer;
     };
 
     template<size_t half, bool sig>
-    class p_Pow2_Integer_Impl : public p_Pow2_Integer_Base<half, sig> {
+    class p_pow2_Integer_Impl : public p_Pow2_Integer_Base<half, sig> {
     private:
         typedef p_Pow2_Integer_Base<half, sig> T;
-        typedef p_Pow2_Integer_Impl<half, sig> I;
-        typedef p_Pow2_Integer_Impl<half, false> UI;
-        typedef p_Pow2_Integer_Impl<half, true> SI;
+        typedef p_pow2_Integer_Impl<half, sig> I;
+        typedef p_pow2_Integer_Impl<half, false> UI;
+        typedef p_pow2_Integer_Impl<half, true> SI;
         typedef typename T::S S;
         typedef typename T::U U;
         typedef typename T::M M;
@@ -787,14 +787,14 @@ namespace JIO {
     public:
         using T::T;
 
-        constexpr inline p_Pow2_Integer_Impl() noexcept = default;
+        constexpr inline p_pow2_Integer_Impl() noexcept = default;
 
         template<bool sig2>
-        constexpr inline p_Pow2_Integer_Impl(
-                const p_Pow2_Integer_Impl<half, sig2> &other) noexcept :
+        constexpr inline p_pow2_Integer_Impl(
+                const p_pow2_Integer_Impl<half, sig2> &other) noexcept :
         T(other.low, other.high) { }
 
-        constexpr inline p_Pow2_Integer_Impl(const T &obj) noexcept : T(obj) { }
+        constexpr inline p_pow2_Integer_Impl(const T &obj) noexcept : T(obj) { }
 
         constexpr inline SI s() const noexcept {
             return SI(T::low, T::high);
@@ -1700,13 +1700,13 @@ namespace JIO {
         friend class Integer;
 
         template<size_t size2, bool sig2>
-        friend class p_Pow2_Integer_Impl;
+        friend class p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
         friend class p_Array_Integer_Impl;
 
         template<typename T>
-        friend struct p_Operators_Impl;
+        friend struct p_native_Integer_Impl;
     };
 
     template <typename T>
