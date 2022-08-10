@@ -450,6 +450,14 @@ namespace JIO {
             return S(T::value) < 0;
         };
 
+        constexpr inline I addOne() const noexcept {
+            return I(T::value + 1);
+        }
+
+        constexpr inline I subOne() const noexcept {
+            return I(T::value - 1);
+        }
+
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) noexcept {
             return T::add_overflow(v1, v2, out);
@@ -527,16 +535,6 @@ namespace JIO {
 
         constexpr inline I operator~() const noexcept {
             return I(~T::value);
-        }
-
-    private:
-
-        constexpr inline I p1() const noexcept {
-            return I(T::value + 1);
-        }
-
-        constexpr inline I m1() const noexcept {
-            return I(T::value - 1);
         }
 
         template<size_t size2, bool sig2>
@@ -767,22 +765,8 @@ namespace JIO {
             return I(U::ZERO(), value.low << (shiftDistance - half * 8));
         }
 
-        constexpr inline I p1() const noexcept {
-            I tmp = *this;
-            if (U::increment_overflow(tmp.low)) {
-                ++tmp.high;
-            }
-            return tmp;
-        }
-
-        constexpr inline I m1() const noexcept {
-            I tmp = *this;
-            if (U::decrement_overflow(tmp.low)) {
-                --tmp.high;
-            }
-            return tmp;
-        }
     public:
+
         using T::T;
 
         constexpr inline p_pow2_Integer_Impl() noexcept = default;
@@ -813,6 +797,22 @@ namespace JIO {
         constexpr inline bool upperBit() const noexcept {
             return T::high.upperBit();
         };
+
+        constexpr inline I addOne() const noexcept {
+            I tmp = *this;
+            if (U::increment_overflow(tmp.low)) {
+                ++tmp.high;
+            }
+            return tmp;
+        }
+
+        constexpr inline I subOne() const noexcept {
+            I tmp = *this;
+            if (U::decrement_overflow(tmp.low)) {
+                --tmp.high;
+            }
+            return tmp;
+        }
 
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) noexcept {
@@ -863,7 +863,7 @@ namespace JIO {
         }
 
         constexpr inline I operator-() const noexcept {
-            return (~(*this)).p1();
+            return (~(*this)).addOne();
         }
 
         template<typename II = Integer<half * 2, sig>>
@@ -1610,14 +1610,6 @@ namespace JIO {
             return downcast_h<size2, sig2>::downcast(*this);
         }
 
-        constexpr inline Integer p1() const noexcept {
-            return value.p1();
-        }
-
-        constexpr inline Integer m1() const noexcept {
-            return value.m1();
-        }
-
         constexpr inline Integer(const V n) noexcept : value(n) { }
     public:
 
@@ -1634,7 +1626,7 @@ namespace JIO {
         };
 
         constexpr inline static Integer ONE() noexcept {
-            return ZERO().p1();
+            return ZERO().addOne();
         };
 
         constexpr inline static Integer MAX_VALUE() noexcept {
@@ -1658,6 +1650,14 @@ namespace JIO {
         constexpr inline bool upperBit() const noexcept {
             return value.upperBit();
         };
+
+        constexpr inline Integer addOne() const noexcept {
+            return value.addOne();
+        }
+
+        constexpr inline Integer subOne() const noexcept {
+            return value.subOne();
+        }
 
         constexpr inline static bool add_overflow(
                 const Integer &v1, const Integer &v2, Integer &out) noexcept {
@@ -1981,11 +1981,11 @@ namespace JIO {
         }
 
         constexpr inline Integer& operator++() noexcept {
-            return *this = p1();
+            return *this = addOne();
         }
 
         constexpr inline Integer& operator--() noexcept {
-            return *this = m1();
+            return *this = subOne();
         }
 
         constexpr inline Integer operator++(int) noexcept {
