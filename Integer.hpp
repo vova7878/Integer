@@ -1676,13 +1676,25 @@ namespace JIO {
             return *this;
         }
 
-        template<size_t size1, bool sig1>
-        friend constexpr Integer<size1, sig1>&
-        operator++(Integer<size1, sig1>&) noexcept;
+        constexpr inline Integer& operator++() noexcept {
+            return *this = p1();
+        }
 
-        template<size_t size1, bool sig1>
-        friend constexpr Integer<size1, sig1>&
-        operator--(Integer<size1, sig1>&) noexcept;
+        constexpr inline Integer& operator--() noexcept {
+            return *this = m1();
+        }
+
+        constexpr inline Integer operator++(int) noexcept {
+            Integer tmp = *this;
+            operator++();
+            return tmp;
+        }
+
+        constexpr inline Integer operator--(int) noexcept {
+            Integer tmp = *this;
+            operator--();
+            return tmp;
+        }
 
         template<size_t size2, bool sig2>
         friend class Integer;
@@ -1713,34 +1725,6 @@ namespace JIO {
         v.print(out);
         out.flags(f);
         return out;
-    }
-
-    template<size_t size1, bool sig1>
-    constexpr inline Integer<size1, sig1>&
-    operator++(Integer<size1, sig1> &v1) noexcept {
-        return v1 = v1.p1();
-    }
-
-    template<size_t size1, bool sig1>
-    constexpr inline Integer<size1, sig1>&
-    operator--(Integer<size1, sig1> &v1) noexcept {
-        return v1 = v1.m1();
-    }
-
-    template<size_t size1, bool sig1>
-    constexpr inline Integer<size1, sig1>
-    operator++(Integer<size1, sig1> &v1, int) noexcept {
-        Integer<size1, sig1> tmp = v1;
-        ++v1;
-        return tmp;
-    }
-
-    template<size_t size1, bool sig1>
-    constexpr inline Integer<size1, sig1>
-    operator--(Integer<size1, sig1> &v1, int) noexcept {
-        Integer<size1, sig1> tmp = v1;
-        --v1;
-        return tmp;
     }
 
     template<size_t size1, bool sig1, typename T,
