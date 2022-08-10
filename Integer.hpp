@@ -142,6 +142,33 @@ namespace JIO {
         return isOneBit(size) ? pow2 : array;
     }
 
+    template<size_t size>
+    struct p_native_types;
+
+    template<>
+    struct p_native_types<1> {
+        typedef int8_t S;
+        typedef uint8_t U;
+    };
+
+    template<>
+    struct p_native_types<2> {
+        typedef int16_t S;
+        typedef uint16_t U;
+    };
+
+    template<>
+    struct p_native_types<4> {
+        typedef int32_t S;
+        typedef uint32_t U;
+    };
+
+    template<>
+    struct p_native_types<8> {
+        typedef int64_t S;
+        typedef uint64_t U;
+    };
+
     template<size_t size, bool = (size > sizeof (unsigned int))>
     struct p_SHValue {
         typedef unsigned int type;
@@ -161,26 +188,32 @@ namespace JIO {
     template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
     struct p_Integer_Impl;
 
-    template<typename T>
+    template<size_t size, bool sig>
     struct p_native_Integer_Impl;
 
-    template<typename U, typename S>
-    class p_Integer_S;
+    template<size_t size, bool sig>
+    struct p_Integer_Impl <size, sig, native> {
+        typedef p_native_Integer_Impl<size, sig> type;
+    };
 
-    template<typename UT, typename ST>
-    class p_Integer_U {
+    template<size_t size, bool sig>
+    struct p_native_Integer_Base;
+
+    template<size_t size>
+    struct p_native_Integer_Base<size, false> {
     private:
-        typedef ST S;
-        typedef UT U;
-        typedef p_Integer_U I;
+        typedef typename p_native_types<size>::S S;
+        typedef typename p_native_types<size>::U U;
+        typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
         U value;
     public:
 
-        constexpr inline p_Integer_U() noexcept = default;
+        constexpr inline p_native_Integer_Base() noexcept = default;
 
-        constexpr explicit inline p_Integer_U(const U n) noexcept : value(n) { }
+        constexpr explicit inline p_native_Integer_Base(const U n) noexcept :
+        value(n) { }
 
         constexpr inline bool isNegative() const noexcept {
             return false;
@@ -209,15 +242,15 @@ namespace JIO {
         }
 
         constexpr inline I operator/(const I &other) const noexcept {
-            return p_Integer_U(value / other.value);
+            return I(value / other.value);
         }
 
         constexpr inline I operator%(const I &other) const noexcept {
-            return p_Integer_U(value % other.value);
+            return I(value % other.value);
         }
 
         constexpr inline I operator>>(const M other) const noexcept {
-            return p_Integer_U(value >> (other & shmask));
+            return I(value >> (other & shmask));
         }
 
         constexpr inline bool operator>(const I &other) const noexcept {
@@ -236,32 +269,34 @@ namespace JIO {
             return value <= other.value;
         }
 
-        template<size_t size, bool sig>
-        friend class Integer;
+        template<size_t size2, bool sig2>
+        friend struct p_native_Integer_Impl;
 
-        friend p_native_Integer_Impl<p_Integer_U<U, S>>;
+        template<size_t size2, bool sig2>
+        friend class Integer;
     };
 
-    template<typename UT, typename ST>
-    class p_Integer_S {
+    template<size_t size>
+    struct p_native_Integer_Base<size, true> {
     private:
-        typedef ST S;
-        typedef UT U;
-        typedef p_Integer_S I;
+        typedef typename p_native_types<size>::S S;
+        typedef typename p_native_types<size>::U U;
+        typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
         U value;
     public:
 
-        constexpr inline p_Integer_S() noexcept = default;
+        constexpr inline p_native_Integer_Base() noexcept = default;
 
-        constexpr explicit inline p_Integer_S(const S n) noexcept : value(n) { }
+        constexpr explicit inline p_native_Integer_Base(const S n) noexcept :
+        value(n) { }
 
         constexpr inline bool isNegative() const noexcept {
             return S(value) < 0;
         };
 
-        template<size_t size, size_t = size>
+        template<size_t size2, size_t = size2>
         struct divrem_h {
 
             constexpr inline static I div(const I &a, const I &b) noexcept {
@@ -273,84 +308,84 @@ namespace JIO {
             }
         };
 
-        template<size_t size>
-        struct divrem_h<size, 1> {
+        template<size_t size2>
+        struct divrem_h<size2, 1> {
 
             constexpr inline static I div(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x80)) && (b.value == U(-1))) {
                     return I(0x80);
                 }
-                return divrem_h<size, 0>::div(a, b);
+                return divrem_h<size2, 0>::div(a, b);
             }
 
             constexpr inline static I rem(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x80)) && (b.value == U(-1))) {
                     return I(0);
                 }
-                return divrem_h<size, 0>::rem(a, b);
+                return divrem_h<size2, 0>::rem(a, b);
             }
         };
 
-        template<size_t size>
-        struct divrem_h<size, 2> {
+        template<size_t size2>
+        struct divrem_h<size2, 2> {
 
             constexpr inline static I div(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x8000)) && (b.value == U(-1))) {
                     return I(0x8000);
                 }
-                return divrem_h<size, 0>::div(a, b);
+                return divrem_h<size2, 0>::div(a, b);
             }
 
             constexpr inline static I rem(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x8000)) && (b.value == U(-1))) {
                     return I(0);
                 }
-                return divrem_h<size, 0>::rem(a, b);
+                return divrem_h<size2, 0>::rem(a, b);
             }
         };
 
-        template<size_t size>
-        struct divrem_h<size, 4> {
+        template<size_t size2>
+        struct divrem_h<size2, 4> {
 
             constexpr inline static I div(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x80000000L)) && (b.value == U(-1L))) {
                     return I(0x80000000L);
                 }
-                return divrem_h<size, 0>::div(a, b);
+                return divrem_h<size2, 0>::div(a, b);
             }
 
             constexpr inline static I rem(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x80000000L)) && (b.value == U(-1L))) {
                     return I(0);
                 }
-                return divrem_h<size, 0>::rem(a, b);
+                return divrem_h<size2, 0>::rem(a, b);
             }
         };
 
-        template<size_t size>
-        struct divrem_h<size, 8> {
+        template<size_t size2>
+        struct divrem_h<size2, 8> {
 
             constexpr inline static I div(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x8000000000000000LL)) && (b.value == U(-1LL))) {
                     return I(0x8000000000000000LL);
                 }
-                return divrem_h<size, 0>::div(a, b);
+                return divrem_h<size2, 0>::div(a, b);
             }
 
             constexpr inline static I rem(const I &a, const I &b) noexcept {
                 if ((a.value == U(0x8000000000000000LL)) && (b.value == U(-1LL))) {
                     return I(0);
                 }
-                return divrem_h<size, 0>::rem(a, b);
+                return divrem_h<size2, 0>::rem(a, b);
             }
         };
 
         constexpr inline I operator/(const I &other) const noexcept {
-            return divrem_h<sizeof (U)>::div(*this, other);
+            return divrem_h<size>::div(*this, other);
         }
 
         constexpr inline I operator%(const I &other) const noexcept {
-            return divrem_h<sizeof (U)>::rem(*this, other);
+            return divrem_h<size>::rem(*this, other);
         }
 
         constexpr inline I operator>>(const M other) const noexcept {
@@ -373,19 +408,23 @@ namespace JIO {
             return S(value) <= S(other.value);
         }
 
-        template<size_t size, bool sig>
-        friend class Integer;
+        template<size_t size2, bool sig2>
+        friend struct p_native_Integer_Impl;
 
-        friend p_native_Integer_Impl<p_Integer_S<U, S>>;
+        template<size_t size2, bool sig2>
+        friend class Integer;
     };
 
-    template<typename T>
-    struct p_native_Integer_Impl : public T {
+    template<size_t size, bool sig>
+    struct p_native_Integer_Impl : public p_native_Integer_Base<size, sig> {
     private:
-
-        typedef p_native_Integer_Impl I;
+        typedef p_native_Integer_Base<size, sig> T;
+        typedef p_native_Integer_Impl<size, sig> I;
+        typedef p_native_Integer_Impl<size, false> UI;
+        typedef p_native_Integer_Impl<size, true> SI;
         typedef typename T::U U;
         typedef typename T::S S;
+        typedef typename T::M M;
 
     public:
 
@@ -474,8 +513,7 @@ namespace JIO {
             return I(T::value ^ other.value);
         }
 
-        constexpr inline I operator<<(const typename T::M other)
-        const noexcept {
+        constexpr inline I operator<<(const M other) const noexcept {
             return I(T::value << (other & T::shmask));
         }
 
@@ -501,48 +539,8 @@ namespace JIO {
             return I(T::value - 1);
         }
 
-        template<size_t size, bool sig>
+        template<size_t size2, bool sig2>
         friend class Integer;
-    };
-
-    template<>
-    struct p_Integer_Impl<1, false> {
-        typedef p_native_Integer_Impl<p_Integer_U<uint8_t, int8_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<1, true> {
-        typedef p_native_Integer_Impl<p_Integer_S<uint8_t, int8_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<2, false> {
-        typedef p_native_Integer_Impl<p_Integer_U<uint16_t, int16_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<2, true> {
-        typedef p_native_Integer_Impl<p_Integer_S<uint16_t, int16_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<4, false> {
-        typedef p_native_Integer_Impl<p_Integer_U<uint32_t, int32_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<4, true> {
-        typedef p_native_Integer_Impl<p_Integer_S<uint32_t, int32_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<8, false> {
-        typedef p_native_Integer_Impl<p_Integer_U<uint64_t, int64_t>> type;
-    };
-
-    template<>
-    struct p_Integer_Impl<8, true> {
-        typedef p_native_Integer_Impl<p_Integer_S<uint64_t, int64_t>> type;
     };
 
     template<size_t half, bool sig>
@@ -554,14 +552,14 @@ namespace JIO {
     };
 
     template<size_t half, bool sig>
-    class p_Pow2_Integer_Base;
+    class p_pow2_Integer_Base;
 
     template<size_t half>
-    class p_Pow2_Integer_Base<half, false> {
+    class p_pow2_Integer_Base<half, false> {
     private:
         typedef Integer<half, true> S;
         typedef Integer<half, false> U;
-        typedef p_Pow2_Integer_Base<half, false> I;
+        typedef p_pow2_Integer_Base<half, false> I;
         typedef p_SHType<half * 2> M;
         constexpr static M shmask = half * 2 * 8 - 1;
         U low, high;
@@ -580,15 +578,15 @@ namespace JIO {
         }
     public:
 
-        constexpr inline p_Pow2_Integer_Base() noexcept = default;
+        constexpr inline p_pow2_Integer_Base() noexcept = default;
 
-        constexpr explicit inline p_Pow2_Integer_Base(const U &low) noexcept :
+        constexpr explicit inline p_pow2_Integer_Base(const U &low) noexcept :
         low(low), high(U::ZERO()) { }
 
-        constexpr explicit inline p_Pow2_Integer_Base(const S &low) noexcept :
+        constexpr explicit inline p_pow2_Integer_Base(const S &low) noexcept :
         low(low), high(low.upperBit() ? ~U::ZERO() : U::ZERO()) { }
 
-        constexpr inline p_Pow2_Integer_Base(const U &low, const U &high)
+        constexpr inline p_pow2_Integer_Base(const U &low, const U &high)
         noexcept : low(low), high(high) { }
 
         constexpr inline bool isNegative() const noexcept {
@@ -667,11 +665,11 @@ namespace JIO {
     };
 
     template<size_t half>
-    class p_Pow2_Integer_Base<half, true> {
+    class p_pow2_Integer_Base<half, true> {
     private:
         typedef Integer<half, true> S;
         typedef Integer<half, false> U;
-        typedef p_Pow2_Integer_Base<half, true> I;
+        typedef p_pow2_Integer_Base<half, true> I;
         typedef p_SHType<half * 2> M;
         constexpr static M shmask = half * 2 * 8 - 1;
         U low, high;
@@ -691,15 +689,15 @@ namespace JIO {
         }
     public:
 
-        constexpr inline p_Pow2_Integer_Base() noexcept = default;
+        constexpr inline p_pow2_Integer_Base() noexcept = default;
 
-        constexpr explicit inline p_Pow2_Integer_Base(const U &low) noexcept :
+        constexpr explicit inline p_pow2_Integer_Base(const U &low) noexcept :
         low(low), high(U::ZERO()) { }
 
-        constexpr explicit inline p_Pow2_Integer_Base(const S &low) noexcept :
+        constexpr explicit inline p_pow2_Integer_Base(const S &low) noexcept :
         low(low), high(low.isNegative() ? ~U::ZERO() : U::ZERO()) { }
 
-        constexpr inline p_Pow2_Integer_Base(const U &low, const U &high)
+        constexpr inline p_pow2_Integer_Base(const U &low, const U &high)
         noexcept : low(low), high(high) { }
 
         constexpr inline bool isNegative() const noexcept {
@@ -746,9 +744,9 @@ namespace JIO {
     };
 
     template<size_t half, bool sig>
-    class p_pow2_Integer_Impl : public p_Pow2_Integer_Base<half, sig> {
+    class p_pow2_Integer_Impl : public p_pow2_Integer_Base<half, sig> {
     private:
-        typedef p_Pow2_Integer_Base<half, sig> T;
+        typedef p_pow2_Integer_Base<half, sig> T;
         typedef p_pow2_Integer_Impl<half, sig> I;
         typedef p_pow2_Integer_Impl<half, false> UI;
         typedef p_pow2_Integer_Impl<half, true> SI;
@@ -2006,13 +2004,13 @@ namespace JIO {
         friend class Integer;
 
         template<size_t size2, bool sig2>
+        friend struct p_native_Integer_Impl;
+
+        template<size_t size2, bool sig2>
         friend class p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
         friend class p_Array_Integer_Impl;
-
-        template<typename T>
-        friend struct p_native_Integer_Impl;
     };
 
     template <typename T>
