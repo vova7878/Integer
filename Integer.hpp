@@ -458,6 +458,17 @@ namespace JIO {
             return I(T::value - 1);
         }
 
+        template<size_t index, p_enable_if(index < size)>
+        constexpr inline uint8_t getByte() const noexcept {
+            return T::value >> (index * 8);
+        }
+
+        template<size_t index, U mask = U(~(U(0xffU) << (index * 8))),
+        p_enable_if(index < size)>
+        constexpr inline void setByte(uint8_t v) noexcept {
+            T::value = (T::value & mask) | (U(v) << index * 8);
+        }
+
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) noexcept {
             return T::add_overflow(v1, v2, out);
@@ -812,6 +823,26 @@ namespace JIO {
                 --tmp.high;
             }
             return tmp;
+        }
+
+        template<size_t index, p_enable_if(index < half)>
+        constexpr inline uint8_t getByte() const noexcept {
+            return T::low.template getByte<index>();
+        }
+
+        template<size_t index, p_enable_if((index >= half) && (index < half * 2))>
+        constexpr inline uint8_t getByte() const noexcept {
+            return T::high.template getByte < index - half > ();
+        }
+
+        template<size_t index, p_enable_if(index < half)>
+        constexpr inline void setByte(uint8_t v) noexcept {
+            T::low.template setByte<index>(v);
+        }
+
+        template<size_t index, p_enable_if((index >= half) && (index < half * 2))>
+        constexpr inline void setByte(uint8_t v) noexcept {
+            T::high.template setByte < index - half > (v);
         }
 
         constexpr inline static bool add_overflow(
@@ -1351,6 +1382,17 @@ namespace JIO {
 
         constexpr inline Integer subOne() const noexcept {
             return value.subOne();
+        }
+
+        template<size_t index, p_enable_if(index < size)>
+        constexpr inline uint8_t getByte() const noexcept {
+            return value.template getByte<index>();
+        }
+
+        template<size_t index, p_enable_if(index < size)>
+        constexpr inline Integer& setByte(uint8_t v) noexcept {
+            value.template setByte<index>(v);
+            return *this;
         }
 
         constexpr inline static bool add_overflow(
