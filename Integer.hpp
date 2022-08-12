@@ -469,6 +469,18 @@ namespace JIO {
             T::value = (T::value & mask) | (U(v) << index * 8);
         }
 
+        template<size_t index, U mask = U(U(1) << index),
+        p_enable_if(index < size * 8)>
+        constexpr inline bool getBit() const noexcept {
+            return T::value & mask;
+        }
+
+        template<size_t index, U mask1 = U(U(1) << index),
+        U mask2 = U(~mask1), p_enable_if(index < size * 8)>
+        constexpr inline void setBit(bool v) noexcept {
+            T::value = v ? (T::value | mask1) : (T::value & mask2);
+        }
+
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) noexcept {
             return T::add_overflow(v1, v2, out);
@@ -843,6 +855,26 @@ namespace JIO {
         template<size_t index, p_enable_if((index >= half) && (index < half * 2))>
         constexpr inline void setByte(uint8_t v) noexcept {
             T::high.template setByte < index - half > (v);
+        }
+
+        template<size_t index, p_enable_if(index < half * 8)>
+        constexpr inline bool getBit() const noexcept {
+            return T::low.template getBit<index>();
+        }
+
+        template<size_t index, p_enable_if((index >= half * 8) && (index < half * 16))>
+        constexpr inline bool getBit() const noexcept {
+            return T::high.template getBit < index - half * 8 > ();
+        }
+
+        template<size_t index, p_enable_if(index < half * 8)>
+        constexpr inline void setBit(bool v) noexcept {
+            T::low.template setBit<index>(v);
+        }
+
+        template<size_t index, p_enable_if((index >= half * 8) && (index < half * 16))>
+        constexpr inline void setBit(bool v) noexcept {
+            T::high.template setBit < index - half * 8 > (v);
         }
 
         constexpr inline static bool add_overflow(
@@ -1692,6 +1724,17 @@ namespace JIO {
         template<size_t index, p_enable_if(index < size)>
         constexpr inline Integer& setByte(uint8_t v) noexcept {
             value.template setByte<index>(v);
+            return *this;
+        }
+
+        template<size_t index, p_enable_if(index < size * 8)>
+        constexpr inline bool getBit() const noexcept {
+            return value.template getBit<index>();
+        }
+
+        template<size_t index, p_enable_if(index < size * 8)>
+        constexpr inline Integer& setBit(bool v) noexcept {
+            value.template setBit<index>(v);
             return *this;
         }
 
