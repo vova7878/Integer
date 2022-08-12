@@ -1027,7 +1027,7 @@ namespace JIO {
         template <typename T, T... values>
         struct array_t {
 
-            constexpr inline const T operator[](size_t index) const {
+            constexpr inline const T operator[](size_t index) const noexcept {
                 static_assert(sizeof...(values) != 0, "zero-size array");
                 constexpr T data[sizeof...(values)] = {values...};
                 return data[index];
@@ -1038,21 +1038,21 @@ namespace JIO {
         struct v_array_t {
             T data[max(size_t(1), length)];
 
-            constexpr inline const T& operator[](size_t index) const {
+            constexpr inline const T& operator[](size_t index) const noexcept {
                 return data[index];
             }
 
-            constexpr inline T& operator[](size_t index) {
+            constexpr inline T& operator[](size_t index) noexcept {
                 return data[index];
             }
         };
 
         template <typename T, size_t length>
-        constexpr inline void unused_array(v_array_t<T, length>) { }
+        constexpr inline void unused_array(v_array_t<T, length>) noexcept { }
 
         template<typename T, T... v1, T... v2>
         constexpr inline array_t<T, v1..., v2...>
-        append(array_t<T, v1...>, array_t<T, v2...>) {
+        append(array_t<T, v1...>, array_t<T, v2...>) noexcept {
             return {};
         }
 
@@ -1080,14 +1080,14 @@ namespace JIO {
         };
 
         template<typename T, T f, T l>
-        constexpr inline typename seq_h<T, f, l>::type make_array() {
+        constexpr inline typename seq_h<T, f, l>::type make_array() noexcept {
             return {};
         }
 
         struct any {
 
             template<typename T>
-            constexpr inline any(T) { }
+            constexpr inline any(T) noexcept { }
         };
 
         template<size_t... i1>
@@ -1097,25 +1097,25 @@ namespace JIO {
 
             template<size_t... i2, typename T>
             constexpr inline static T
-            get_value(any_h<i1>..., T value, any_h<i2>...) {
+            get_value(any_h<i1>..., T value, any_h<i2>...) noexcept {
                 return value;
             }
         };
 
         template<size_t... i1, size_t... i2, typename... Tp>
         constexpr inline auto p_element_h(array_t<size_t, i1...>,
-                array_t<size_t, i2...>, Tp... arr) {
+                array_t<size_t, i2...>, Tp... arr) noexcept {
             return p_wrapper<i1...>::template get_value<i2...>(arr...);
         };
 
         template<size_t index, typename... Tp>
-        constexpr inline auto element(Tp... arr) {
+        constexpr inline auto element(Tp... arr) noexcept {
             return p_element_h(make_array<size_t, 0, index>(),
                     make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
         };
 
         template<typename... Tp>
-        constexpr inline auto last_element(Tp... arr) {
+        constexpr inline auto last_element(Tp... arr) noexcept {
             return element<sizeof...(arr) - 1 > (arr...);
         };
     }
@@ -1178,6 +1178,7 @@ namespace JIO {
         typedef p_SHType<size> M;
         constexpr static M shdivider = size * 8;
         constexpr static size_t length = size / sizeof (U);
+
         template<typename Tp, Tp... values>
         using A = p_i_seq::array_t<Tp, values...>;
         template<size_t len>
@@ -1186,26 +1187,27 @@ namespace JIO {
 
     public:
 
-        constexpr inline p_array_Integer_Base() = default;
+        constexpr inline p_array_Integer_Base() noexcept = default;
 
     private:
 
         template<size_t a_len>
-        constexpr inline static U value_for_index(
-                AT<a_len> arr, size_t index, U fill) {
+        constexpr inline static U
+        value_for_index(AT<a_len> arr, size_t index, U fill) noexcept {
             return index < a_len ? arr[index] : fill;
         }
 
         template<size_t a_len, size_t... index>
-        constexpr inline static AT<length> set_h(
-                AT< a_len> arr, A<size_t, index...>, U fill) {
+        constexpr inline static AT<length>
+        set_h(AT< a_len> arr, A<size_t, index...>, U fill) noexcept {
             return {value_for_index(arr, index, fill)...};
         }
 
     public:
 
         template<typename... Tp>
-        constexpr explicit inline p_array_Integer_Base(Tp... arr) :
+        constexpr explicit inline
+        p_array_Integer_Base(Tp... arr) noexcept :
         data(set_h(AT<sizeof...(Tp)>{U(arr)...},
         p_i_seq::make_array<size_t, 0, length>(),
                 (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
@@ -1237,7 +1239,8 @@ namespace JIO {
     public:
         using T::T;
 
-        constexpr inline p_array_Integer_Impl(const T &obj) : T(obj) { }
+        constexpr inline p_array_Integer_Impl(const T &obj) noexcept :
+        T(obj) { }
 
         void printv(std::ostream &out) {
             out << std::hex;
@@ -1251,70 +1254,77 @@ namespace JIO {
 
     public:
 
-        constexpr inline I operator+() const {
+        constexpr inline I operator+() const noexcept {
             return *this;
         }
 
-        /*constexpr inline I operator-() const {
+        /*constexpr inline I operator-() const noexcept{
             return (~(*this)).p1();
         }*/
 
     private:
 
         template<size_t... index>
-        constexpr inline static bool isZero_h(const I &v, A<size_t, index...>) {
+        constexpr inline static bool
+        isZero_h(const I &v, A<size_t, index...>) noexcept {
             bool out = true;
-            p_i_seq::unused_array<bool, sizeof...(index)>({(out &= (v.data[index] == 0))...});
+            p_i_seq::unused_array<bool, sizeof...(index)>({
+                (out &= (v.data[index] == 0))...
+            });
             return out;
         }
 
     public:
 
-        constexpr inline bool isZero() const {
+        constexpr inline bool isZero() const noexcept {
             return isZero_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
         };
 
     private:
 
         template<size_t... index>
-        constexpr inline static I neg_h(const I &v, A<size_t, index...>) {
+        constexpr inline static I
+        neg_h(const I &v, A<size_t, index...>) noexcept {
             return I((~v.data[index])...);
         }
 
     public:
 
-        constexpr inline I operator~() const {
+        constexpr inline I operator~() const noexcept {
             return neg_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
         }
 
     private:
 
         template<size_t... index>
-        constexpr inline static I or_h(const I &v1, const I &v2, A<size_t, index...>) {
+        constexpr inline static I
+        or_h(const I &v1, const I &v2, A<size_t, index...>) noexcept {
             return I((v1.data[index] | v2.data[index])...);
         }
 
         template<size_t... index>
-        constexpr inline static I and_h(const I &v1, const I &v2, A<size_t, index...>) {
+        constexpr inline static I
+        and_h(const I &v1, const I &v2, A<size_t, index...>) noexcept {
             return I((v1.data[index] & v2.data[index])...);
         }
 
         template<size_t... index>
-        constexpr inline static I xor_h(const I &v1, const I &v2, A<size_t, index...>) {
+        constexpr inline static I
+        xor_h(const I &v1, const I &v2, A<size_t, index...>) noexcept {
             return I((v1.data[index] ^ v2.data[index])...);
         }
 
     public:
 
-        constexpr inline I operator|(const I &v2) const {
+        constexpr inline I operator|(const I &v2) const noexcept {
             return or_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
         }
 
-        constexpr inline I operator&(const I &v2) const {
+        constexpr inline I operator&(const I &v2) const noexcept {
             return and_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
         }
 
-        constexpr inline I operator^(const I &v2) const {
+        constexpr inline I operator^(const I &v2) const noexcept {
             return xor_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
         }
 
