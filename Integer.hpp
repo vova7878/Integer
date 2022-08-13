@@ -568,7 +568,7 @@ namespace JIO {
     class p_pow2_Integer_Impl;
 
     template<size_t size, bool sig>
-    struct p_Integer_Impl <size, sig, p_IType::pow2> {
+    struct p_Integer_Impl <size, sig, pow2> {
         typedef p_pow2_Integer_Impl<size / 2, sig> type;
     };
 
