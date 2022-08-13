@@ -1085,6 +1085,7 @@ namespace JIO {
         }
 
         struct any {
+            constexpr inline any() noexcept = default;
 
             template<typename T>
             constexpr inline any(T) noexcept { }
@@ -1125,34 +1126,34 @@ namespace JIO {
 
     template<>
     struct p_Element_Types<0> {
-        typedef uint32_t U;
-        typedef int32_t S;
-        typedef uint64_t DU;
-        typedef int64_t DS;
+        typedef Integer<4, false> U;
+        typedef Integer<4, true> S;
+        typedef Integer<8, false> DU;
+        typedef Integer<8, true> DS;
     };
 
     template<>
     struct p_Element_Types<1> {
-        typedef uint8_t U;
-        typedef int8_t S;
-        typedef uint16_t DU;
-        typedef int16_t DS;
+        typedef Integer<1, false> U;
+        typedef Integer<1, true> S;
+        typedef Integer<2, false> DU;
+        typedef Integer<2, true> DS;
     };
 
     template<>
     struct p_Element_Types<2> {
-        typedef uint16_t U;
-        typedef int16_t S;
-        typedef uint32_t DU;
-        typedef int32_t DS;
+        typedef Integer<2, false> U;
+        typedef Integer<2, true> S;
+        typedef Integer<4, false> DU;
+        typedef Integer<4, true> DS;
     };
 
     template<>
     struct p_Element_Types<3> {
-        typedef uint8_t U;
-        typedef int8_t S;
-        typedef uint16_t DU;
-        typedef int16_t DS;
+        typedef Integer<1, false> U;
+        typedef Integer<1, true> S;
+        typedef Integer<2, false> DU;
+        typedef Integer<2, true> DS;
     };
 
     template<size_t size, bool sig>
@@ -1185,9 +1186,16 @@ namespace JIO {
         using AT = p_i_seq::v_array_t<U, len>;
         AT<length> data;
 
+        constexpr explicit inline
+        p_array_Integer_Base(AT<length> arr) noexcept : data(arr) { }
+
     public:
 
         constexpr inline p_array_Integer_Base() noexcept = default;
+
+        constexpr inline bool isNegative() const noexcept {
+            return false;
+        };
 
     private:
 
@@ -1239,28 +1247,27 @@ namespace JIO {
     public:
         using T::T;
 
-        constexpr inline p_array_Integer_Impl(const T &obj) noexcept :
-        T(obj) { }
+        constexpr inline p_array_Integer_Impl() noexcept = default;
 
-        void printv(std::ostream &out) {
-            out << std::hex;
-            size_t i = T::length;
-            out << uint32_t(T::data[--i]);
-            do {
-                out << ", ";
-                out << uint32_t(T::data[--i]);
-            } while (i > 0);
+        template<bool sig2>
+        constexpr inline
+        p_array_Integer_Impl(const p_array_Integer_Impl<size, sig2> &other)
+        noexcept : T(other.data) { }
+
+        constexpr inline
+        p_array_Integer_Impl(const T &obj) noexcept : T(obj) { }
+
+        constexpr inline SI s() const noexcept {
+            return SI(T::data);
         }
 
-    public:
-
-        constexpr inline I operator+() const noexcept {
-            return *this;
+        constexpr inline UI u() const noexcept {
+            return UI(T::data);
         }
 
-        /*constexpr inline I operator-() const noexcept{
-            return (~(*this)).p1();
-        }*/
+        constexpr inline static I ZERO() noexcept {
+            return I(AT<T::length>{});
+        };
 
     private:
 
@@ -1279,6 +1286,104 @@ namespace JIO {
         constexpr inline bool isZero() const noexcept {
             return isZero_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
         };
+
+        constexpr inline bool upperBit() const noexcept {
+            return T::data[T::length - 1].upperBit();
+        };
+
+        void printv(std::ostream &out) {
+            out << std::hex;
+            size_t i = T::length;
+            out << uint32_t(T::data[--i]);
+            do {
+                out << ", ";
+                out << uint32_t(T::data[--i]);
+            } while (i > 0);
+        }
+
+        constexpr inline I addOne() const noexcept {
+            I tmp = *this;
+            bool add = true;
+            for (size_t i = 0; add && (i < T::length - 1); ++i) {
+                add = U::increment_overflow(tmp.data[i]);
+            }
+            if (add) {
+                ++tmp.data[T::length - 1];
+            }
+            return tmp;
+        }
+
+        constexpr inline I subOne() const noexcept {
+            I tmp = *this;
+            bool add = true;
+            for (size_t i = 0; add && (i < T::length - 1); ++i) {
+                add = U::decrement_overflow(tmp.data[i]);
+            }
+            if (add) {
+                --tmp.data[T::length - 1];
+            }
+            return tmp;
+        }
+
+        template<size_t index, size_t arr_index = index / sizeof (U),
+        size_t n = index % sizeof (U), p_enable_if(index < size)>
+        constexpr inline uint8_t getByte() const noexcept {
+            return T::data[arr_index].template getByte<n>();
+        }
+
+        template<size_t index, size_t arr_index = index / sizeof (U),
+        size_t n = index % sizeof (U), p_enable_if(index < size)>
+        constexpr inline I& setByte(uint8_t v) noexcept {
+            T::data[arr_index].template setByte<n>(v);
+            return *this;
+        }
+
+        template<size_t index, size_t arr_index = index / (sizeof (U) * 8),
+        size_t n = index % (sizeof (U) * 8), p_enable_if(index < size * 8)>
+        constexpr inline bool getBit() const noexcept {
+            return T::data[arr_index].template getBit<n>();
+        }
+
+        template<size_t index, size_t arr_index = index / (sizeof (U) * 8),
+        size_t n = index % (sizeof (U) * 8), p_enable_if(index < size * 8)>
+        constexpr inline void setBit(bool v) noexcept {
+            T::data[arr_index].template setBit<n>(v);
+        }
+
+    private:
+
+        template<size_t index>
+        constexpr inline static p_i_seq::any
+        leftShiftOneBit_h(I &v) noexcept {
+            U::leftShiftOneBit(v.data[index], v.data[index - 1].upperBit());
+            return {};
+        }
+
+        template<size_t... index>
+        constexpr inline static void
+        leftShiftOneBit_h(I &v, A<size_t, index...>) noexcept {
+            p_i_seq::unused_array < p_i_seq::any, sizeof...(index)>({
+                (leftShiftOneBit_h < T::length - index > (v))...
+            });
+        }
+
+    public:
+
+        constexpr inline static void
+        leftShiftOneBit(I &value, bool bit) noexcept {
+            leftShiftOneBit_h(value, p_i_seq::make_array<size_t, 1, T::length> ());
+            U::leftShiftOneBit(value.data[0], bit);
+        }
+
+    public:
+
+        constexpr inline I operator+() const noexcept {
+            return *this;
+        }
+
+        constexpr inline I operator-() const noexcept {
+            return (~(*this)).addOne();
+        }
 
     private:
 
