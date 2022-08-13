@@ -1799,9 +1799,6 @@ namespace JIO {
 
         template<size_t size2, bool sig2>
         friend class p_pow2_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class p_Array_Integer_Impl;
     };
 
     template <typename T>
