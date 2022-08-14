@@ -1200,6 +1200,66 @@ namespace JIO {
         friend class Integer;
     };
 
+    template<size_t size>
+    class p_array_Integer_Base<size, true> {
+    private:
+        typedef p_Element_Types<size> ET;
+        typedef typename ET::S S;
+        typedef typename ET::U U;
+        typedef typename ET::DS DS;
+        typedef typename ET::DU DU;
+        typedef p_array_Integer_Base I;
+        typedef p_SHType<size> M;
+        constexpr static M shdivider = size * 8;
+        constexpr static size_t length = size / sizeof (U);
+
+        template<typename Tp, Tp... values>
+        using A = p_i_seq::array_t<Tp, values...>;
+        template<size_t len>
+        using AT = p_i_seq::v_array_t<U, len>;
+        AT<length> data;
+
+        constexpr explicit inline
+        p_array_Integer_Base(AT<length> arr) noexcept : data(arr) { }
+
+    public:
+
+        constexpr inline p_array_Integer_Base() noexcept = default;
+
+        constexpr inline bool isNegative() const noexcept {
+            return data[length - 1].upperBit();
+        };
+
+    private:
+
+        template<size_t a_len>
+        constexpr inline static U
+        value_for_index(AT<a_len> arr, size_t index, U fill) noexcept {
+            return index < a_len ? arr[index] : fill;
+        }
+
+        template<size_t a_len, size_t... index>
+        constexpr inline static AT<length>
+        set_h(AT< a_len> arr, A<size_t, index...>, U fill) noexcept {
+            return {value_for_index(arr, index, fill)...};
+        }
+
+    public:
+
+        template<typename... Tp>
+        constexpr explicit inline
+        p_array_Integer_Base(Tp... arr) noexcept :
+        data(set_h(AT<sizeof...(Tp)>{U(arr)...},
+        p_i_seq::make_array<size_t, 0, length>(),
+                (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
+
+        template<size_t size2, bool sig2>
+        friend class p_array_Integer_Impl;
+
+        template<size_t size2, bool sig2>
+        friend class Integer;
+    };
+
     template<size_t size, bool sig>
     class p_array_Integer_Impl : p_array_Integer_Base<size, sig> {
     private:
