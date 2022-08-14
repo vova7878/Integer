@@ -1257,6 +1257,60 @@ namespace JIO {
         constexpr inline
         p_array_Integer_Impl(const T &obj) noexcept : T(obj) { }
 
+    private:
+
+        template<size_t size2, bool sig2, size_t... index>
+        constexpr inline static void
+        copy_from(I &out, const Integer<size2, sig2> &value,
+                A<size_t, index...>) noexcept {
+            p_i_seq::unused_array<I, size>({
+                (out.template setByte<index>(value.template getByte<index>()))...
+            });
+        }
+
+        template<size_t size2, bool sig2, size_t... index>
+        constexpr inline static void
+        copy_to(Integer<size2, sig2> &out, const I &value,
+                A<size_t, index...>) noexcept {
+            p_i_seq::unused_array<Integer<size2, sig2>, size2>({
+                (out.template setByte<index>(value.template getByte<index>()))...
+            });
+        }
+
+    public:
+
+        template<size_t size2, bool sig2, p_enable_if(size2 > size)>
+        constexpr inline static I
+        downcast_from(const Integer<size2, sig2> &value) noexcept {
+            I out = I::ZERO();
+            copy_from(out, value, p_i_seq::make_array<size_t, 0, size>());
+            return out;
+        }
+
+        template<size_t size2, bool sig2,
+        typename R = Integer<size2, sig2>, p_enable_if(size2 < size)>
+        constexpr inline static R downcast_to(const I &value) noexcept {
+            R out = R::ZERO();
+            copy_to(out, value, p_i_seq::make_array<size_t, 0, size2>());
+            return out;
+        }
+
+        template<size_t size2, bool sig2, p_enable_if(size2 < size)>
+        constexpr inline static I
+        upcast_from(const Integer<size2, sig2> &value) noexcept {
+            I out = value.isNegative() ? ~I::ZERO() : I::ZERO();
+            copy_from(out, value, p_i_seq::make_array<size_t, 0, size2>());
+            return out;
+        }
+
+        template<size_t size2, bool sig2,
+        typename R = Integer<size2, sig2>, p_enable_if(size2 > size)>
+        constexpr inline static R upcast_to(const I &value) noexcept {
+            R out = value.isNegative() ? ~R::ZERO() : R::ZERO();
+            copy_to(out, value, p_i_seq::make_array<size_t, 0, size>());
+            return out;
+        }
+
         constexpr inline SI s() const noexcept {
             return SI(T::data);
         }
@@ -1707,12 +1761,17 @@ namespace JIO {
         bool = (size != size2) &&
         ((p_getIntegerType(size) == native) ||
                 (p_getIntegerType(size) == pow2)) &&
-        (p_getIntegerType(size2) == pow2)>
+        (p_getIntegerType(size2) == pow2),
+        bool = (size == size2) && (p_getIntegerType(size) == array),
+        bool = (size != size2) && (p_getIntegerType(size) == array),
+        bool = ((p_getIntegerType(size) == native) ||
+                (p_getIntegerType(size) == pow2)) &&
+        (p_getIntegerType(size2) == array)>
         struct upcast_h {
         };
 
         template<size_t size2, bool sig2>
-        struct upcast_h<size2, sig2, true, false, false> {
+        struct upcast_h<size2, sig2, true, false, false, false, false, false> {
 
             constexpr inline static Integer<size2, sig2>
             upcast(const Integer &v) noexcept {
@@ -1723,7 +1782,7 @@ namespace JIO {
         };
 
         template<size_t size2, bool sig2>
-        struct upcast_h<size2, sig2, false, true, false> {
+        struct upcast_h<size2, sig2, false, true, false, false, false, false> {
 
             constexpr inline static Integer<size2, sig2>
             upcast(const Integer &v) noexcept {
@@ -1733,13 +1792,42 @@ namespace JIO {
         };
 
         template<size_t size2, bool sig2>
-        struct upcast_h<size2, sig2, false, false, true> {
+        struct upcast_h<size2, sig2, false, false, true, false, false, false> {
 
             constexpr inline static Integer<size2, sig2>
             upcast(const Integer &v) noexcept {
                 using I = Integer<size2, sig2>;
                 return typename I::V(p_castUS<typename I::V::U,
                         typename I::V::S, sig > (v));
+            }
+        };
+
+        template<size_t size2, bool sig2>
+        struct upcast_h<size2, sig2, false, false, false, true, false, false> {
+
+            constexpr inline static Integer<size2, sig2>
+            upcast(const Integer &v) noexcept {
+                using I = Integer<size2, sig2>;
+                return typename I::V(v.value);
+            }
+        };
+
+        template<size_t size2, bool sig2>
+        struct upcast_h<size2, sig2, false, false, false, false, true, false> {
+
+            constexpr inline static Integer<size2, sig2>
+            upcast(const Integer &v) noexcept {
+                return V::template upcast_to<size2, sig2>(v.value);
+            }
+        };
+
+        template<size_t size2, bool sig2>
+        struct upcast_h<size2, sig2, false, false, false, false, false, true> {
+
+            constexpr inline static Integer<size2, sig2>
+            upcast(const Integer &v) noexcept {
+                using I = Integer<size2, sig2>;
+                return I::V::template upcast_from(v);
             }
         };
 
@@ -1753,12 +1841,16 @@ namespace JIO {
         (p_getIntegerType(size2) == native),
         bool = (p_getIntegerType(size) == pow2) &&
         ((p_getIntegerType(size2) == pow2) ||
-                (p_getIntegerType(size2) == native))>
+                (p_getIntegerType(size2) == native)),
+        bool = (p_getIntegerType(size) == array) &&
+        ((p_getIntegerType(size2) == pow2) ||
+                (p_getIntegerType(size2) == native)),
+        bool = (p_getIntegerType(size2) == array)>
         struct downcast_h {
         };
 
         template<size_t size2, bool sig2>
-        struct downcast_h<size2, sig2, true, false> {
+        struct downcast_h<size2, sig2, true, false, false, false> {
 
             constexpr inline static Integer<size2, sig2>
             downcast(const Integer &v) noexcept {
@@ -1768,12 +1860,30 @@ namespace JIO {
         };
 
         template<size_t size2, bool sig2>
-        struct downcast_h<size2, sig2, false, true> {
+        struct downcast_h<size2, sig2, false, true, false, false> {
 
             constexpr inline static Integer<size2, sig2>
             downcast(const Integer &v) noexcept {
                 using I = Integer<size2, sig2>;
                 return I(v.value.low);
+            }
+        };
+
+        template<size_t size2, bool sig2>
+        struct downcast_h<size2, sig2, false, false, true, false> {
+
+            constexpr inline static Integer<size2, sig2>
+            downcast(const Integer &v) noexcept {
+                return V::template downcast_to<size2, sig2>(v.value);
+            }
+        };
+
+        template<size_t size2, bool sig2>
+        struct downcast_h<size2, sig2, false, false, false, true> {
+
+            template<typename R = Integer<size2, sig2>>
+            constexpr inline static R downcast(const Integer &v) noexcept {
+                return R::V::from_downcast(v);
             }
         };
 
