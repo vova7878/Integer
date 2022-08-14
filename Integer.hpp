@@ -1121,39 +1121,12 @@ namespace JIO {
         };
     }
 
-    template<int>
-    struct p_Element_Types;
-
-    template<>
-    struct p_Element_Types<0> {
-        typedef Integer<4, false> U;
-        typedef Integer<4, true> S;
-        typedef Integer<8, false> DU;
-        typedef Integer<8, true> DS;
-    };
-
-    template<>
-    struct p_Element_Types<1> {
-        typedef Integer<1, false> U;
-        typedef Integer<1, true> S;
-        typedef Integer<2, false> DU;
-        typedef Integer<2, true> DS;
-    };
-
-    template<>
-    struct p_Element_Types<2> {
-        typedef Integer<2, false> U;
-        typedef Integer<2, true> S;
-        typedef Integer<4, false> DU;
-        typedef Integer<4, true> DS;
-    };
-
-    template<>
-    struct p_Element_Types<3> {
-        typedef Integer<1, false> U;
-        typedef Integer<1, true> S;
-        typedef Integer<2, false> DU;
-        typedef Integer<2, true> DS;
+    template<size_t size, size_t is = lowestOneBit(size)>
+    struct p_Element_Types {
+        typedef Integer<is, false> U;
+        typedef Integer<is, true> S;
+        typedef Integer<is * 2, false> DU;
+        typedef Integer<is * 2, true> DS;
     };
 
     template<size_t size, bool sig>
@@ -1170,7 +1143,7 @@ namespace JIO {
     template<size_t size>
     class p_array_Integer_Base<size, false> {
     private:
-        typedef p_Element_Types<size & 3> ET;
+        typedef p_Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
         typedef typename ET::DS DS;
@@ -1883,7 +1856,7 @@ namespace JIO {
 
             template<typename R = Integer<size2, sig2>>
             constexpr inline static R downcast(const Integer &v) noexcept {
-                return R::V::from_downcast(v);
+                return R::V::downcast_from(v);
             }
         };
 
