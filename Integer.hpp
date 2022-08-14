@@ -1319,12 +1319,11 @@ namespace JIO {
         };
 
         void printv(std::ostream &out) {
-            out << std::hex;
             size_t i = T::length;
-            out << uint32_t(T::data[--i]);
+            out << T::data[--i];
             do {
                 out << ", ";
-                out << uint32_t(T::data[--i]);
+                out << T::data[--i];
             } while (i > 0);
         }
 
