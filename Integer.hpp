@@ -1380,10 +1380,10 @@ namespace JIO {
 
         void printv(std::ostream &out) {
             size_t i = T::length;
-            out << T::data[--i];
+            T::data[--i].printv(out);
             do {
                 out << ", ";
-                out << T::data[--i];
+                T::data[--i].printv(out);
             } while (i > 0);
         }
 
