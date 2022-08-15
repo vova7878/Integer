@@ -2118,6 +2118,14 @@ namespace JIO {
             }
         };
 
+        template<typename T>
+        struct tcast_h<T, array> {
+
+            constexpr inline static V tcast(const T n) noexcept {
+                return Integer(Integer<sizeof (T), JIO::p_is_signed<T>()>(n)).value;
+            }
+        };
+
     public:
 
         template<typename T,
@@ -2148,7 +2156,7 @@ namespace JIO {
         template<typename T,
         bool = (p_getIntegerType(size) == native) && (sizeof (T) >= size),
         bool = (p_getIntegerType(size) == native) && (sizeof (T) < size),
-        bool = (p_getIntegerType(size) != native) && (sizeof (T) < size)>
+        bool = (p_getIntegerType(size) != native)>
         struct pcast_h {
         };
 
