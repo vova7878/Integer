@@ -1056,8 +1056,15 @@ namespace JIO {
             }
         };
 
-        template <typename T, size_t length>
-        constexpr inline void unused_array(v_array_t<T, length>) noexcept { }
+        struct any {
+            constexpr inline any() noexcept = default;
+
+            template<typename T>
+            constexpr inline any(T) noexcept { }
+        };
+
+        template <size_t length>
+        constexpr inline void unused_array(v_array_t<any, length>) noexcept { }
 
         template<typename T, T... v1, T... v2>
         constexpr inline array_t<T, v1..., v2...>
@@ -1089,16 +1096,7 @@ namespace JIO {
         };
 
         template<typename T, T f, T l>
-        constexpr inline typename seq_h<T, f, l>::type make_array() noexcept {
-            return {};
-        }
-
-        struct any {
-            constexpr inline any() noexcept = default;
-
-            template<typename T>
-            constexpr inline any(T) noexcept { }
-        };
+        using make_array = typename seq_h<T, f, l>::type;
 
         template<size_t... i1>
         struct p_wrapper {
@@ -1305,7 +1303,7 @@ namespace JIO {
         constexpr inline static void
         copy_from(I &out, const Integer<size2, sig2> &value,
                 A<size_t, index...>) noexcept {
-            p_i_seq::unused_array<I, size>({
+            p_i_seq::unused_array<size>({
                 (out.template setByte<index>(value.template getByte<index>()))...
             });
         }
@@ -1314,7 +1312,7 @@ namespace JIO {
         constexpr inline static void
         copy_to(Integer<size2, sig2> &out, const I &value,
                 A<size_t, index...>) noexcept {
-            p_i_seq::unused_array<Integer<size2, sig2>, size2>({
+            p_i_seq::unused_array<size2>({
                 (out.template setByte<index>(value.template getByte<index>()))...
             });
         }
@@ -1457,7 +1455,7 @@ namespace JIO {
         template<size_t... index>
         constexpr inline static void
         leftShiftOneBit_h(I &v, A<size_t, index...>) noexcept {
-            p_i_seq::unused_array < p_i_seq::any, sizeof...(index)>({
+            p_i_seq::unused_array<sizeof...(index)>({
                 (leftShiftOneBit_h < T::length - index > (v))...
             });
         }
