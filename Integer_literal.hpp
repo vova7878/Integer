@@ -33,13 +33,7 @@ namespace JIO {
 #define p_enable_if(B) p_enable_if_t<(B)> = false
 
     template <typename T, T... values>
-    struct p_array_t {
-        const T data[max(size_t(1), sizeof...(values))] = {values...};
-
-        constexpr inline const T operator[](size_t index) const {
-            return data[index];
-        }
-    };
+    using p_array_t = p_i_seq::array_t<T, values...>;
 
     template<typename T, T value, T... values>
     constexpr inline auto p_append(p_array_t<T, values...>) noexcept {
