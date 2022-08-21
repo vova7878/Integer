@@ -220,7 +220,7 @@ namespace JIO {
 
         constexpr inline bool isNegative() const noexcept {
             return false;
-        };
+        }
 
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) noexcept {
@@ -297,7 +297,7 @@ namespace JIO {
 
         constexpr inline bool isNegative() const noexcept {
             return S(value) < 0;
-        };
+        }
 
         template<size_t size2, size_t = size2>
         struct divrem_h {
@@ -443,15 +443,15 @@ namespace JIO {
 
         constexpr inline static I ZERO() noexcept {
             return T(0);
-        };
+        }
 
         constexpr inline bool isZero() const noexcept {
             return T::value == 0;
-        };
+        }
 
         constexpr inline bool upperBit() const noexcept {
             return S(T::value) < 0;
-        };
+        }
 
         constexpr inline I addOne() const noexcept {
             return I(T::value + 1);
@@ -615,7 +615,7 @@ namespace JIO {
 
         constexpr inline bool isNegative() const noexcept {
             return false;
-        };
+        }
 
         constexpr inline static bool add_overflow(
                 const I &v1, const I &v2, I &out) noexcept {
@@ -726,7 +726,7 @@ namespace JIO {
 
         constexpr inline bool isNegative() const noexcept {
             return high.upperBit();
-        };
+        }
 
         constexpr inline bool operator>(const I &other) const noexcept {
             if (high == other.high) {
@@ -814,15 +814,15 @@ namespace JIO {
 
         constexpr inline static I ZERO() noexcept {
             return I(U::ZERO());
-        };
+        }
 
         constexpr inline bool isZero() const noexcept {
             return T::low.isZero() && T::high.isZero();
-        };
+        }
 
         constexpr inline bool upperBit() const noexcept {
             return T::high.upperBit();
-        };
+        }
 
         constexpr inline I addOne() const noexcept {
             I tmp = *this;
@@ -1936,41 +1936,41 @@ namespace JIO {
 
         constexpr inline static size_t SIZE() noexcept {
             return size;
-        };
+        }
 
         constexpr inline static bool is_signed() noexcept {
             return sig;
-        };
+        }
 
         constexpr inline static Integer ZERO() noexcept {
             return V::ZERO();
-        };
+        }
 
         constexpr inline static Integer ONE() noexcept {
             return ZERO().addOne();
-        };
+        }
 
         constexpr inline static Integer MAX_VALUE() noexcept {
             return p_max_value<Integer, sig>();
-        };
+        }
 
         constexpr inline static Integer MIN_VALUE() noexcept {
             return p_min_value<Integer, sig>();
-        };
+        }
 
         constexpr inline Integer() noexcept = default;
 
         constexpr inline bool isZero() const noexcept {
             return value.isZero();
-        };
+        }
 
         constexpr inline bool isNegative() const noexcept {
             return value.isNegative();
-        };
+        }
 
         constexpr inline bool upperBit() const noexcept {
             return value.upperBit();
-        };
+        }
 
         constexpr inline Integer addOne() const noexcept {
             return value.addOne();
