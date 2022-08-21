@@ -1036,6 +1036,105 @@ namespace JIO {
         return std::is_signed<T>::value;
     }
 
+
+
+    namespace p_i_seq {
+
+        template <typename T, T... values>
+        struct array_t {
+
+            constexpr inline const T operator[](size_t index) const noexcept {
+                static_assert(sizeof...(values) != 0, "zero-size array");
+                constexpr T data[sizeof...(values)] = {values...};
+                return data[index];
+            }
+        };
+
+        template <typename T, size_t length>
+        struct v_array_t {
+            T data[max(size_t(1), length)];
+
+            constexpr inline const T& operator[](size_t index) const noexcept {
+                return data[index];
+            }
+
+            constexpr inline T& operator[](size_t index) noexcept {
+                return data[index];
+            }
+        };
+
+        struct any {
+            constexpr inline any() noexcept = default;
+
+            template<typename T>
+            constexpr inline any(T) noexcept { }
+        };
+
+        template <size_t length>
+        constexpr inline void unused_array(v_array_t<any, length>) noexcept { }
+
+        template<typename T, T... v1, T... v2>
+        constexpr inline array_t<T, v1..., v2...>
+        append(array_t<T, v1...>, array_t<T, v2...>) noexcept {
+            return {};
+        }
+
+        template <typename T, T f, T l,
+        int = (f > l) ? -1 : (l == f ? 0 : ((l - f == 1) ? 1 : 2))>
+        struct seq_h;
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 0> {
+            typedef array_t<T> type;
+        };
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 1> {
+            typedef array_t<T, f> type;
+        };
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 2> {
+            constexpr static T d = l - f;
+            typedef decltype(append<T>(
+                    typename seq_h<T, f, f + d / 2 > ::type(),
+                    typename seq_h<T, f + d / 2, f + d> ::type()
+                    )) type;
+        };
+
+        template<typename T, T f, T l>
+        using make_array = typename seq_h<T, f, l>::type;
+
+        template<size_t... i1>
+        struct p_wrapper {
+            template<size_t>
+            using any_h = any;
+
+            template<size_t... i2, typename T>
+            constexpr inline static T
+            get_value(any_h<i1>..., T value, any_h<i2>...) noexcept {
+                return value;
+            }
+        };
+
+        template<size_t... i1, size_t... i2, typename... Tp>
+        constexpr inline auto p_element_h(array_t<size_t, i1...>,
+                array_t<size_t, i2...>, Tp... arr) noexcept {
+            return p_wrapper<i1...>::template get_value<i2...>(arr...);
+        }
+
+        template<size_t index, typename... Tp>
+        constexpr inline auto element(Tp... arr) noexcept {
+            return p_element_h(make_array<size_t, 0, index>(),
+                    make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
+        }
+
+        template<typename... Tp>
+        constexpr inline auto last_element(Tp... arr) noexcept {
+            return element<sizeof...(arr) - 1 > (arr...);
+        }
+    }
+
     template<typename U, typename S, bool sig, typename V, p_enable_if(sig)>
     constexpr inline S p_castUS(V value) noexcept {
         return S(value);
