@@ -1114,18 +1114,18 @@ namespace JIO {
         constexpr inline auto p_element_h(array_t<size_t, i1...>,
                 array_t<size_t, i2...>, Tp... arr) noexcept {
             return p_wrapper<i1...>::template get_value<i2...>(arr...);
-        };
+        }
 
         template<size_t index, typename... Tp>
         constexpr inline auto element(Tp... arr) noexcept {
             return p_element_h(make_array<size_t, 0, index>(),
                     make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
-        };
+        }
 
         template<typename... Tp>
         constexpr inline auto last_element(Tp... arr) noexcept {
             return element<sizeof...(arr) - 1 > (arr...);
-        };
+        }
     }
 
     template<size_t size, size_t is = lowestOneBit(size)>
@@ -1175,7 +1175,7 @@ namespace JIO {
 
         constexpr inline bool isNegative() const noexcept {
             return false;
-        };
+        }
 
     private:
 
@@ -1235,7 +1235,7 @@ namespace JIO {
 
         constexpr inline bool isNegative() const noexcept {
             return data[length - 1].upperBit();
-        };
+        }
 
     private:
 
@@ -1361,7 +1361,7 @@ namespace JIO {
 
         constexpr inline static I ZERO() noexcept {
             return I(AT<T::length>{});
-        };
+        }
 
     private:
 
@@ -1379,11 +1379,11 @@ namespace JIO {
 
         constexpr inline bool isZero() const noexcept {
             return isZero_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
-        };
+        }
 
         constexpr inline bool upperBit() const noexcept {
             return T::data[T::length - 1].upperBit();
-        };
+        }
 
         void printv(std::ostream &out) {
             size_t i = T::length;
