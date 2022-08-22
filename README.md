@@ -9,7 +9,7 @@ Please see LICENSE file for license.
 This is a simple implementation of integer types in C++. It is intended to be used like the standard uintX_t, except for a different name.
 
 ### In Code
-All that needs to be done in code is `#include "Integer.hpp"` or `#include "Integer_literal.hpp"` to support integer literals
+All that needs to be done in code is `#include "Integer.hpp"`
 
 ```c++
 #include <iostream>
