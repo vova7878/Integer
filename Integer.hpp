@@ -821,16 +821,16 @@ namespace JIO {
 
         constexpr inline bool operator>=(const I &other) const noexcept {
             if (high == other.high) {
-                return low > other.low;
+                return low >= other.low;
             }
-            return high >= other.high;
+            return high > other.high;
         }
 
         constexpr inline bool operator<=(const I &other) const noexcept {
             if (high == other.high) {
-                return low < other.low;
+                return low <= other.low;
             }
-            return high <= other.high;
+            return high < other.high;
         }
 
         constexpr inline I operator>>(const M other) const noexcept {
@@ -900,16 +900,16 @@ namespace JIO {
 
         constexpr inline bool operator>=(const I &other) const noexcept {
             if (high == other.high) {
-                return low > other.low;
+                return low >= other.low;
             }
-            return S(high) >= S(other.high);
+            return S(high) > S(other.high);
         }
 
         constexpr inline bool operator<=(const I &other) const noexcept {
             if (high == other.high) {
-                return low < other.low;
+                return low <= other.low;
             }
-            return S(high) <= S(other.high);
+            return S(high) < S(other.high);
         }
 
         constexpr inline I operator>>(const M other) const noexcept {
