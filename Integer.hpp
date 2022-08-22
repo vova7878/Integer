@@ -593,10 +593,6 @@ namespace JIO {
 
         constexpr inline p_native_Integer_Impl(const T &obj) noexcept : T(obj) { }
 
-        void printv(std::ostream &out) {
-            out << std::hex << uint64_t(T::value) << std::dec;
-        }
-
         constexpr inline static I ZERO() noexcept {
             return T(0);
         }
@@ -1058,12 +1054,6 @@ namespace JIO {
         noexcept {
             U::leftShiftOneBit(value.high, value.low.upperBit());
             U::leftShiftOneBit(value.low, bit);
-        }
-
-        void printv(std::ostream &out) {
-            T::high.printv(out);
-            out << ", ";
-            T::low.printv(out);
         }
 
         constexpr inline size_t numberOfLeadingZeros() const noexcept {
@@ -2176,16 +2166,6 @@ namespace JIO {
             return value.value;
         }
 
-        void print(std::ostream &out) {
-            out << "I<" << std::dec << size << ", " << (sig ? "t" : "f") << ">{";
-            value.printv(out);
-            out << "}";
-        }
-
-        void printv(std::ostream &out) {
-            value.printv(out);
-        }
-
         template<typename T>
         constexpr inline Integer(p_bool_t<T> n) noexcept :
         value(typename V::U(n)) { }
@@ -2483,11 +2463,137 @@ namespace JIO {
         friend class p_array_Integer_Impl;
     };
 
-    template<size_t size1, bool sig1>
-    std::ostream& operator<<(std::ostream &out, Integer<size1, sig1> v) {
-        auto f = out.flags();
-        v.print(out);
-        out.flags(f);
+    namespace p_i_print {
+
+        template<size_t size, size_t... index,
+        typename R = Integer<size, false >>
+        constexpr inline R
+        div_ten_const_h(p_i_seq::array_t<size_t, index...>) noexcept {
+            R out = R::ZERO();
+            p_i_seq::unused_array<size>({
+                (out.template setByte<index>(index == 0 ? 0xcd : 0xcc))...
+            });
+            return out;
+        }
+
+        template<size_t size>
+        constexpr inline Integer<size, false> div_ten_const() noexcept {
+            return div_ten_const_h<size>(p_i_seq::make_array<size_t, 0, size>());
+        }
+
+        template<size_t size, p_enable_if(p_getIntegerType(size) == native)>
+        constexpr inline unsigned
+        divremTen(Integer<size, false> &v) noexcept {
+            constexpr Integer<size, false> dc = div_ten_const<size>();
+            unsigned tmp = unsigned(v);
+            v /= Integer<size, false>(10);
+            return tmp - unsigned(v) * 10;
+        }
+
+        template<size_t size, p_enable_if(p_getIntegerType(size) == pow2)>
+        constexpr inline unsigned
+        divremTen(Integer<size, false> &v) noexcept {
+            constexpr Integer<size, false> dc = div_ten_const<size>();
+            unsigned tmp = unsigned(v);
+            v = wmultiply(v, dc).uhigh() >> 3;
+            return tmp - unsigned(v) * 10;
+        }
+
+        constexpr inline size_t p_digits10(size_t size, bool sig) noexcept {
+            static_assert(sizeof (size_t) <= 8, "too big size_t");
+            return size_t(wmultiply<8>(size * 8 - sig,
+                    0x4d104d427de7FbccULL).uhigh());
+        }
+
+        template<size_t size, bool sig, typename CharT, typename Traits>
+        inline void printDec(const Integer<size, sig> &v,
+                std::basic_ostream<CharT, Traits> &out) {
+            auto f = out.flags();
+            constexpr size_t d = p_digits10(size, sig) + 2;
+            bool neg = false;
+            Integer<size, false> tmp = v;
+            if (v.isNegative()) {
+                tmp = -tmp;
+                neg = true;
+            }
+            char str[d + 1]; // trailing \0
+            size_t i = d;
+            str[i--] = 0;
+            while (tmp >= 10) {
+                str[i--] = p_i_utils::digits[divremTen(tmp)];
+            }
+            str[i] = p_i_utils::digits[unsigned(tmp)];
+            if (neg) {
+                str[--i] = '-';
+            } else if (f & std::ios_base::showpos) {
+                str[--i] = '+';
+            }
+            out << &str[i];
+        }
+
+        template<size_t size, bool sig, typename CharT, typename Traits>
+        inline void printHex(const Integer<size, sig> &v,
+                std::basic_ostream<CharT, Traits> &out) {
+            auto f = out.flags();
+            constexpr size_t d = size * 2 + 2;
+            Integer<size, false> tmp = v;
+            char str[d + 1]; // trailing \0
+            size_t i = d;
+            str[i--] = 0;
+            while (tmp >= 16) {
+                str[i--] = p_i_utils::digits[unsigned(tmp) & 0xf];
+                tmp >>= 4;
+            }
+            str[i] = p_i_utils::digits[unsigned(tmp)];
+            if (f & std::ios_base::showbase) {
+                str[--i] = 'x';
+                str[--i] = '0';
+            }
+            out << &str[i];
+        }
+
+        template<size_t size, bool sig, typename CharT, typename Traits>
+        inline void printOct(const Integer<size, sig> &v,
+                std::basic_ostream<CharT, Traits> &out) {
+            auto f = out.flags();
+            constexpr size_t d = (size * 8 + 2) / 3 + 1;
+            Integer<size, false> tmp = v;
+            char str[d + 1]; // trailing \0
+            size_t i = d;
+            str[i--] = 0;
+            while (tmp >= 8) {
+                str[i--] = p_i_utils::digits[unsigned(tmp) & 0x7];
+                tmp >>= 3;
+            }
+            str[i] = p_i_utils::digits[unsigned(tmp)];
+            if (f & std::ios_base::showbase) {
+                str[--i] = '0';
+            }
+            out << &str[i];
+        }
+
+        template<size_t size, bool sig, typename CharT, typename Traits>
+        inline void print(const Integer<size, sig> &v,
+                std::basic_ostream<CharT, Traits> &out) {
+            auto f = out.flags();
+            if (f & std::ios_base::hex) {
+                printHex(v, out);
+                return;
+            }
+            if (f & std::ios_base::oct) {
+                printOct(v, out);
+                return;
+            }
+            printDec(v, out);
+        }
+    }
+
+    template<size_t size, bool sig, typename CharT, typename Traits>
+    inline std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits> &out,
+            const Integer<size, sig> &v) {
+        Integer < p_i_utils::make_pow2(size), sig> tmp = v;
+        p_i_print::print(tmp, out);
         return out;
     }
 
