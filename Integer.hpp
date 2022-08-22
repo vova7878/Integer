@@ -371,15 +371,15 @@ namespace JIO {
 
         constexpr inline p_native_Integer_Base() noexcept = default;
 
-        constexpr explicit inline p_native_Integer_Base(const U n) noexcept :
-        value(n) { }
+        constexpr explicit inline
+        p_native_Integer_Base(const U n) noexcept : value(n) { }
 
         constexpr inline bool isNegative() const noexcept {
             return false;
         }
 
-        constexpr inline static bool add_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool
+        add_overflow(const I &v1, const I &v2, I &out) noexcept {
             U tmp = v1.value + v2.value;
             out = I(tmp);
             return tmp < v1.value;
@@ -389,8 +389,8 @@ namespace JIO {
             return (++value.value) == 0;
         }
 
-        constexpr inline static bool sub_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool
+        sub_overflow(const I &v1, const I &v2, I &out) noexcept {
             U tmp = v1.value - v2.value;
             out = I(tmp);
             return tmp > v1.value;
@@ -448,8 +448,8 @@ namespace JIO {
 
         constexpr inline p_native_Integer_Base() noexcept = default;
 
-        constexpr explicit inline p_native_Integer_Base(const S n) noexcept :
-        value(n) { }
+        constexpr explicit inline
+        p_native_Integer_Base(const S n) noexcept : value(n) { }
 
         constexpr inline bool isNegative() const noexcept {
             return S(value) < 0;
@@ -640,8 +640,8 @@ namespace JIO {
             T::value = v ? (T::value | mask1) : (T::value & mask2);
         }
 
-        constexpr inline static bool add_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool
+        add_overflow(const I &v1, const I &v2, I &out) noexcept {
             return T::add_overflow(v1, v2, out);
         }
 
@@ -649,8 +649,8 @@ namespace JIO {
             return T::increment_overflow(value);
         }
 
-        constexpr inline static bool sub_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool
+        sub_overflow(const I &v1, const I &v2, I &out) noexcept {
             return T::sub_overflow(v1, v2, out);
         }
 
@@ -658,8 +658,8 @@ namespace JIO {
             return T::decrement_overflow(value);
         }
 
-        constexpr inline static void leftShiftOneBit(I &value, bool bit)
-        noexcept {
+        constexpr inline static void
+        leftShiftOneBit(I &value, bool bit) noexcept {
             value.value = (value.value << 1) | U(bit);
         }
 
@@ -744,8 +744,8 @@ namespace JIO {
         constexpr static M shmask = half * 2 * 8 - 1;
         U low, high;
 
-        constexpr inline static I rightShift(
-                const I &value, const M shiftDistance) noexcept {
+        constexpr inline static I
+        rightShift(const I &value, const M shiftDistance) noexcept {
             if (shiftDistance == 0) {
                 return value;
             }
@@ -773,8 +773,8 @@ namespace JIO {
             return false;
         }
 
-        constexpr inline static bool add_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool
+        add_overflow(const I &v1, const I &v2, I &out) noexcept {
             bool tmpo = U::add_overflow(v1.high, v2.high, out.high);
             if (U::add_overflow(v1.low, v2.low, out.low)) {
                 return U::increment_overflow(out.high) || tmpo;
@@ -789,8 +789,8 @@ namespace JIO {
             return false;
         }
 
-        constexpr inline static bool sub_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool
+        sub_overflow(const I &v1, const I &v2, I &out) noexcept {
             bool tmpo = U::sub_overflow(v1.high, v2.high, out.high);
             if (U::sub_overflow(v1.low, v2.low, out.low)) {
                 return U::decrement_overflow(out.high) || tmpo;
@@ -854,8 +854,8 @@ namespace JIO {
         constexpr static M shmask = half * 2 * 8 - 1;
         U low, high;
 
-        constexpr inline static I rightShift(
-                const I &value, const M shiftDistance) noexcept {
+        constexpr inline static I
+        rightShift(const I &value, const M shiftDistance) noexcept {
             if (shiftDistance == 0) {
                 return value;
             }
@@ -934,8 +934,8 @@ namespace JIO {
         typedef typename T::U U;
         typedef typename T::M M;
 
-        constexpr inline static I leftShift(const I &value,
-                const typename T::M shiftDistance) noexcept {
+        constexpr inline static I
+        leftShift(const I &value, const typename T::M shiftDistance) noexcept {
             if (shiftDistance == 0) {
                 return value;
             }
@@ -954,9 +954,9 @@ namespace JIO {
         constexpr inline p_pow2_Integer_Impl() noexcept = default;
 
         template<bool sig2>
-        constexpr inline p_pow2_Integer_Impl(
-                const p_pow2_Integer_Impl<half, sig2> &other) noexcept :
-        T(other.low, other.high) { }
+        constexpr inline
+        p_pow2_Integer_Impl(const p_pow2_Integer_Impl<half, sig2> &other)
+        noexcept : T(other.low, other.high) { }
 
         constexpr inline p_pow2_Integer_Impl(const T &obj) noexcept : T(obj) { }
 
@@ -1054,8 +1054,8 @@ namespace JIO {
             return T::decrement_overflow(value);
         }
 
-        constexpr inline static void leftShiftOneBit(I &value, bool bit)
-        noexcept {
+        constexpr inline static void
+        leftShiftOneBit(I &value, bool bit) noexcept {
             U::leftShiftOneBit(value.high, value.low.upperBit());
             U::leftShiftOneBit(value.low, bit);
         }
