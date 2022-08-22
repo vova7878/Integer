@@ -60,77 +60,255 @@ namespace JIO {
         return v1 < v2 ? v1 : v2;
     }
 
-    constexpr inline size_t p_numberOfLeadingZeros2Bit_h(uint8_t i) noexcept {
-        return i ? (1 - (i >> 1)) : 2;
+    namespace p_i_seq {
+
+        template <typename T, T... values>
+        struct array_t {
+
+            constexpr inline const T operator[](size_t index) const noexcept {
+                static_assert(sizeof...(values) != 0, "zero-size array");
+                constexpr T data[sizeof...(values)] = {values...};
+                return data[index];
+            }
+        };
+
+        template <typename T, size_t length>
+        struct v_array_t {
+            T data[max(size_t(1), length)];
+
+            constexpr inline const T& operator[](size_t index) const noexcept {
+                return data[index];
+            }
+
+            constexpr inline T& operator[](size_t index) noexcept {
+                return data[index];
+            }
+        };
+
+        struct any {
+            constexpr inline any() noexcept = default;
+
+            template<typename T>
+            constexpr inline any(T) noexcept { }
+        };
+
+        template <size_t length>
+        constexpr inline void unused_array(v_array_t<any, length>) noexcept { }
+
+        template<typename T, T... v1, T... v2>
+        constexpr inline array_t<T, v1..., v2...>
+        append(array_t<T, v1...>, array_t<T, v2...>) noexcept {
+            return {};
+        }
+
+        template <typename T, T f, T l,
+        int = (f > l) ? -1 : (l == f ? 0 : ((l - f == 1) ? 1 : 2))>
+        struct seq_h;
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 0> {
+            typedef array_t<T> type;
+        };
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 1> {
+            typedef array_t<T, f> type;
+        };
+
+        template <typename T, T f, T l>
+        struct seq_h <T, f, l, 2> {
+            constexpr static T d = l - f;
+            typedef decltype(append<T>(
+                    typename seq_h<T, f, f + d / 2 > ::type(),
+                    typename seq_h<T, f + d / 2, f + d> ::type()
+                    )) type;
+        };
+
+        template<typename T, T f, T l>
+        using make_array = typename seq_h<T, f, l>::type;
+
+        template<size_t... i1>
+        struct p_wrapper {
+            template<size_t>
+            using any_h = any;
+
+            template<size_t... i2, typename T>
+            constexpr inline static T
+            get_value(any_h<i1>..., T value, any_h<i2>...) noexcept {
+                return value;
+            }
+        };
+
+        template<size_t... i1, size_t... i2, typename... Tp>
+        constexpr inline auto p_element_h(array_t<size_t, i1...>,
+                array_t<size_t, i2...>, Tp... arr) noexcept {
+            return p_wrapper<i1...>::template get_value<i2...>(arr...);
+        }
+
+        template<size_t index, typename... Tp>
+        constexpr inline auto element(Tp... arr) noexcept {
+            return p_element_h(make_array<size_t, 0, index>(),
+                    make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
+        }
+
+        template<typename... Tp>
+        constexpr inline auto last_element(Tp... arr) noexcept {
+            return element<sizeof...(arr) - 1 > (arr...);
+        }
     }
 
-    constexpr inline size_t p_numberOfLeadingZeros4Bit_h(uint8_t i) noexcept {
-        return (i >= 1 << 2) ?
-                p_numberOfLeadingZeros2Bit_h(i >> 2) :
-                p_numberOfLeadingZeros2Bit_h(i) + 2;
-    }
+    namespace p_i_utils {
 
-    constexpr inline size_t p_numberOfLeadingZeros_h(uint8_t i) noexcept {
-        return (i >= 1 << 4) ?
-                p_numberOfLeadingZeros4Bit_h(i >> 4) :
-                p_numberOfLeadingZeros4Bit_h(i) + 4;
-    }
+        constexpr static char digits[62] = {
+            '0', '1', '2', '3', '4',
+            '5', '6', '7', '8', '9',
 
-    constexpr inline size_t p_numberOfLeadingZeros_h(uint16_t i) noexcept {
-        return (i >= 1 << 8) ?
-                p_numberOfLeadingZeros_h(uint8_t(i >> 8)) :
-                p_numberOfLeadingZeros_h(uint8_t(i)) + 8;
-    }
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'g', 'k', 'l', 'm',
+            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 
-    constexpr inline size_t p_numberOfLeadingZeros_h(uint32_t i) noexcept {
-        return (i >= 1 << 16) ?
-                p_numberOfLeadingZeros_h(uint16_t(i >> 16)) :
-                p_numberOfLeadingZeros_h(uint16_t(i)) + 16;
-    }
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'G', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+        };
 
-    constexpr inline size_t p_numberOfLeadingZeros_h(uint64_t i) noexcept {
-        return (i >= uint64_t(1) << 32) ?
-                p_numberOfLeadingZeros_h(uint32_t(i >> 32)) :
-                p_numberOfLeadingZeros_h(uint32_t(i)) + 32;
-    }
+        template<char c, size_t index = 0, p_enable_if(digits[index] == c)>
+        constexpr inline auto indexOfDigit() noexcept {
+            return index < 36 ? index : index - 26;
+        }
 
-    constexpr inline size_t p_numberOfTrailingZeros2Bit_h(uint8_t i) noexcept {
-        return i ? (1 - (i & 1)) : 2;
-    }
+        template<char c, size_t index = 0, p_enable_if(digits[index] != c)>
+        constexpr inline auto indexOfDigit() noexcept {
+            return indexOfDigit<c, index + 1 > ();
+        }
 
-    constexpr inline size_t p_numberOfTrailingZeros4Bit_h(uint8_t i) noexcept {
-        return (i & 0x3) ?
-                p_numberOfTrailingZeros2Bit_h(i) :
-                p_numberOfTrailingZeros2Bit_h(i >> 2) + 2;
-    }
+        constexpr inline size_t numberOfLeadingZeros2Bit_n(uint8_t i) noexcept {
+            return i ? (1 - (i >> 1)) : 2;
+        }
 
-    constexpr inline size_t p_numberOfTrailingZeros_h(uint8_t i) noexcept {
-        return (i & 0xf) ?
-                p_numberOfTrailingZeros4Bit_h(i) :
-                p_numberOfTrailingZeros4Bit_h(i >> 4) + 4;
-    }
+        constexpr inline size_t numberOfLeadingZeros4Bit_n(uint8_t i) noexcept {
+            return (i >= 1 << 2) ?
+                    numberOfLeadingZeros2Bit_n(i >> 2) :
+                    numberOfLeadingZeros2Bit_n(i) + 2;
+        }
 
-    constexpr inline size_t p_numberOfTrailingZeros_h(uint16_t i) noexcept {
-        return (uint8_t(i)) ?
-                p_numberOfTrailingZeros_h(uint8_t(i)) :
-                p_numberOfTrailingZeros_h(uint8_t(i >> 8)) + 8;
-    }
+        constexpr inline size_t numberOfLeadingZeros_n(uint8_t i) noexcept {
+            return (i >= 1 << 4) ?
+                    numberOfLeadingZeros4Bit_n(i >> 4) :
+                    numberOfLeadingZeros4Bit_n(i) + 4;
+        }
 
-    constexpr inline size_t p_numberOfTrailingZeros_h(uint32_t i) noexcept {
-        return (uint16_t(i)) ?
-                p_numberOfTrailingZeros_h(uint16_t(i)) :
-                p_numberOfTrailingZeros_h(uint16_t(i >> 16)) + 16;
-    }
+        constexpr inline size_t numberOfLeadingZeros_n(uint16_t i) noexcept {
+            return (i >= 1 << 8) ?
+                    numberOfLeadingZeros_n(uint8_t(i >> 8)) :
+                    numberOfLeadingZeros_n(uint8_t(i)) + 8;
+        }
 
-    constexpr inline size_t p_numberOfTrailingZeros_h(uint64_t i) noexcept {
-        return (uint32_t(i)) ?
-                p_numberOfTrailingZeros_h(uint32_t(i)) :
-                p_numberOfTrailingZeros_h(uint32_t(i >> 32)) + 32;
-    }
+        constexpr inline size_t numberOfLeadingZeros_n(uint32_t i) noexcept {
+            return (i >= 1 << 16) ?
+                    numberOfLeadingZeros_n(uint16_t(i >> 16)) :
+                    numberOfLeadingZeros_n(uint16_t(i)) + 16;
+        }
 
-    template <typename T>
-    constexpr inline size_t logb2(const T value) noexcept {
-        return sizeof (T) * 8 - p_numberOfLeadingZeros_h(value);
+        constexpr inline size_t numberOfLeadingZeros_n(uint64_t i) noexcept {
+            return (i >= uint64_t(1) << 32) ?
+                    numberOfLeadingZeros_n(uint32_t(i >> 32)) :
+                    numberOfLeadingZeros_n(uint32_t(i)) + 32;
+        }
+
+        constexpr inline size_t numberOfTrailingZeros2Bit_n(uint8_t i) noexcept {
+            return i ? (1 - (i & 1)) : 2;
+        }
+
+        constexpr inline size_t numberOfTrailingZeros4Bit_n(uint8_t i) noexcept {
+            return (i & 0x3) ?
+                    numberOfTrailingZeros2Bit_n(i) :
+                    numberOfTrailingZeros2Bit_n(i >> 2) + 2;
+        }
+
+        constexpr inline size_t numberOfTrailingZeros_n(uint8_t i) noexcept {
+            return (i & 0xf) ?
+                    numberOfTrailingZeros4Bit_n(i) :
+                    numberOfTrailingZeros4Bit_n(i >> 4) + 4;
+        }
+
+        constexpr inline size_t numberOfTrailingZeros_n(uint16_t i) noexcept {
+            return (uint8_t(i)) ?
+                    numberOfTrailingZeros_n(uint8_t(i)) :
+                    numberOfTrailingZeros_n(uint8_t(i >> 8)) + 8;
+        }
+
+        constexpr inline size_t numberOfTrailingZeros_n(uint32_t i) noexcept {
+            return (uint16_t(i)) ?
+                    numberOfTrailingZeros_n(uint16_t(i)) :
+                    numberOfTrailingZeros_n(uint16_t(i >> 16)) + 16;
+        }
+
+        constexpr inline size_t numberOfTrailingZeros_n(uint64_t i) noexcept {
+            return (uint32_t(i)) ?
+                    numberOfTrailingZeros_n(uint32_t(i)) :
+                    numberOfTrailingZeros_n(uint32_t(i >> 32)) + 32;
+        }
+
+        template <typename T>
+        constexpr inline size_t logb2_n(const T value) noexcept {
+            return sizeof (T) * 8 - numberOfLeadingZeros_n(value);
+        }
+
+        constexpr inline size_t make_pow2(size_t i) noexcept {
+            if (i == 0) {
+                return 0;
+            }
+            size_t log = logb2_n(i);
+            if (i == (size_t(1) << (log - 1))) {
+                return i;
+            }
+            return 1 << log;
+        }
+
+        template<size_t size, bool sig>
+        struct native_int_type_h;
+
+        template<>
+        struct native_int_type_h<1, false> {
+            typedef uint8_t type;
+        };
+
+        template<>
+        struct native_int_type_h<1, true> {
+            typedef int8_t type;
+        };
+
+        template<>
+        struct native_int_type_h<2, false> {
+            typedef uint16_t type;
+        };
+
+        template<>
+        struct native_int_type_h<2, true> {
+            typedef int16_t type;
+        };
+
+        template<>
+        struct native_int_type_h<4, false> {
+            typedef uint32_t type;
+        };
+
+        template<>
+        struct native_int_type_h<4, true> {
+            typedef int32_t type;
+        };
+
+        template<>
+        struct native_int_type_h<8, false> {
+            typedef uint64_t type;
+        };
+
+        template<>
+        struct native_int_type_h<8, true> {
+            typedef int64_t type;
+        };
+
+        template<size_t size, bool sig>
+        using native_int_type = typename native_int_type_h<size, sig>::type;
     }
 
     enum p_IType {
@@ -149,33 +327,6 @@ namespace JIO {
         }
         return isOneBit(size) ? pow2 : array;
     }
-
-    template<size_t size>
-    struct p_native_types;
-
-    template<>
-    struct p_native_types<1> {
-        typedef int8_t S;
-        typedef uint8_t U;
-    };
-
-    template<>
-    struct p_native_types<2> {
-        typedef int16_t S;
-        typedef uint16_t U;
-    };
-
-    template<>
-    struct p_native_types<4> {
-        typedef int32_t S;
-        typedef uint32_t U;
-    };
-
-    template<>
-    struct p_native_types<8> {
-        typedef int64_t S;
-        typedef uint64_t U;
-    };
 
     template<size_t size, bool = (size > sizeof (unsigned int))>
     struct p_SHValue {
@@ -210,8 +361,8 @@ namespace JIO {
     template<size_t size>
     struct p_native_Integer_Base<size, false> {
     private:
-        typedef typename p_native_types<size>::S S;
-        typedef typename p_native_types<size>::U U;
+        typedef p_i_utils::native_int_type<size, true> S;
+        typedef p_i_utils::native_int_type<size, false> U;
         typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
@@ -287,8 +438,8 @@ namespace JIO {
     template<size_t size>
     struct p_native_Integer_Base<size, true> {
     private:
-        typedef typename p_native_types<size>::S S;
-        typedef typename p_native_types<size>::U U;
+        typedef p_i_utils::native_int_type<size, true> S;
+        typedef p_i_utils::native_int_type<size, false> U;
         typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
@@ -513,11 +664,11 @@ namespace JIO {
         }
 
         constexpr inline size_t numberOfLeadingZeros() const noexcept {
-            return p_numberOfLeadingZeros_h(T::value);
+            return p_i_utils::numberOfLeadingZeros_n(T::value);
         }
 
         constexpr inline size_t numberOfTrailingZeros() const noexcept {
-            return p_numberOfTrailingZeros_h(T::value);
+            return p_i_utils::numberOfTrailingZeros_n(T::value);
         }
 
         constexpr inline I operator+() const noexcept {
@@ -1034,103 +1185,6 @@ namespace JIO {
     template<typename T>
     constexpr inline bool p_is_signed() noexcept {
         return std::is_signed<T>::value;
-    }
-
-    namespace p_i_seq {
-
-        template <typename T, T... values>
-        struct array_t {
-
-            constexpr inline const T operator[](size_t index) const noexcept {
-                static_assert(sizeof...(values) != 0, "zero-size array");
-                constexpr T data[sizeof...(values)] = {values...};
-                return data[index];
-            }
-        };
-
-        template <typename T, size_t length>
-        struct v_array_t {
-            T data[max(size_t(1), length)];
-
-            constexpr inline const T& operator[](size_t index) const noexcept {
-                return data[index];
-            }
-
-            constexpr inline T& operator[](size_t index) noexcept {
-                return data[index];
-            }
-        };
-
-        struct any {
-            constexpr inline any() noexcept = default;
-
-            template<typename T>
-            constexpr inline any(T) noexcept { }
-        };
-
-        template <size_t length>
-        constexpr inline void unused_array(v_array_t<any, length>) noexcept { }
-
-        template<typename T, T... v1, T... v2>
-        constexpr inline array_t<T, v1..., v2...>
-        append(array_t<T, v1...>, array_t<T, v2...>) noexcept {
-            return {};
-        }
-
-        template <typename T, T f, T l,
-        int = (f > l) ? -1 : (l == f ? 0 : ((l - f == 1) ? 1 : 2))>
-        struct seq_h;
-
-        template <typename T, T f, T l>
-        struct seq_h <T, f, l, 0> {
-            typedef array_t<T> type;
-        };
-
-        template <typename T, T f, T l>
-        struct seq_h <T, f, l, 1> {
-            typedef array_t<T, f> type;
-        };
-
-        template <typename T, T f, T l>
-        struct seq_h <T, f, l, 2> {
-            constexpr static T d = l - f;
-            typedef decltype(append<T>(
-                    typename seq_h<T, f, f + d / 2 > ::type(),
-                    typename seq_h<T, f + d / 2, f + d> ::type()
-                    )) type;
-        };
-
-        template<typename T, T f, T l>
-        using make_array = typename seq_h<T, f, l>::type;
-
-        template<size_t... i1>
-        struct p_wrapper {
-            template<size_t>
-            using any_h = any;
-
-            template<size_t... i2, typename T>
-            constexpr inline static T
-            get_value(any_h<i1>..., T value, any_h<i2>...) noexcept {
-                return value;
-            }
-        };
-
-        template<size_t... i1, size_t... i2, typename... Tp>
-        constexpr inline auto p_element_h(array_t<size_t, i1...>,
-                array_t<size_t, i2...>, Tp... arr) noexcept {
-            return p_wrapper<i1...>::template get_value<i2...>(arr...);
-        }
-
-        template<size_t index, typename... Tp>
-        constexpr inline auto element(Tp... arr) noexcept {
-            return p_element_h(make_array<size_t, 0, index>(),
-                    make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
-        }
-
-        template<typename... Tp>
-        constexpr inline auto last_element(Tp... arr) noexcept {
-            return element<sizeof...(arr) - 1 > (arr...);
-        }
     }
 
     template<size_t size, size_t is = lowestOneBit(size)>
@@ -2867,6 +2921,137 @@ namespace JIO {
     constexpr inline T&
     operator>>=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
         return v1 = T(Integer<sizeof (T), p_is_signed<T>()>(v1) >> v2);
+    }
+
+    namespace p_literal {
+        template <typename T, T... values>
+        using array_t = p_i_seq::array_t<T, values...>;
+
+        constexpr size_t bits_to_bytes(size_t bits, bool sig) noexcept {
+            return p_i_utils::make_pow2((bits + 7 + sig) / 8);
+        }
+
+        template<bool sig, int bit_per_symbol, int first, int... nums>
+        constexpr inline auto get_bytes() noexcept {
+            return bits_to_bytes(sizeof...(nums) * bit_per_symbol +
+                    (4 - p_i_utils::numberOfLeadingZeros4Bit_n(first)), sig);
+        }
+
+        template<bool sig, int... nums,
+        size_t bytes = get_bytes<sig, 4, nums...>()>
+        constexpr inline auto parseHex(array_t<int, nums...> arr) noexcept {
+            using I = Integer<bytes, sig>;
+            I out = I::ZERO();
+            for (size_t i = 0; i < sizeof...(nums); i++) {
+                out <<= 4;
+                out |= I(arr[i]);
+            }
+            return out;
+        }
+
+        template<bool sig, size_t bytes, int... nums>
+        constexpr inline auto parseDec_h(array_t<int, nums...> arr) noexcept {
+            using I = Integer<bytes, sig>;
+            I out = I::ZERO();
+            for (size_t i = 0; i < sizeof...(nums); i++) {
+                out *= I(10);
+                out += I(arr[i]);
+            }
+            return out;
+        }
+
+        template<bool sig, int... nums,
+        size_t hex_bytes = bits_to_bytes(sizeof...(nums) * 4, false),
+        size_t bytes = bits_to_bytes(
+                hex_bytes * 8 - parseDec_h<false, hex_bytes>(
+                array_t<int, nums...>()).numberOfLeadingZeros(), sig)>
+        constexpr inline auto parseDec(array_t<int, nums...> arr) noexcept {
+            return parseDec_h<sig, bytes>(arr);
+        }
+
+        template<bool sig, int... nums,
+        size_t bytes = get_bytes<sig, 3, nums...>()>
+        constexpr inline auto parseOct(array_t<int, nums...> arr) noexcept {
+            using I = Integer<bytes, sig>;
+            I out = I::ZERO();
+            for (size_t i = 0; i < sizeof...(nums); i++) {
+                out <<= 3;
+                out |= I(arr[i]);
+            }
+            return out;
+        }
+
+        template<bool sig, int... nums,
+        size_t bytes = get_bytes<sig, 1, nums...>()>
+        constexpr inline auto parseBin(array_t<int, nums...> arr) noexcept {
+            using I = Integer<bytes, sig>;
+            I out = I::ZERO();
+            for (size_t i = 0; i < sizeof...(nums); i++) {
+                out <<= 1;
+                out |= I(arr[i]);
+            }
+            return out;
+        }
+
+        template<int min, int max, int value,
+        p_enable_if((value >= min) && (value <= max))>
+        constexpr inline int contains() noexcept {
+            return value;
+        }
+
+        template<int min, int max, char... chars>
+        constexpr inline auto verify() noexcept {
+            return array_t<int, contains<min, max,
+                    p_i_utils::indexOfDigit<chars>()>()...>();
+        }
+
+        template<int min, int max, char a, char... chars, p_enable_if(a != '0')>
+        constexpr inline auto remove_zeros_and_verify() noexcept {
+            return verify<min, max, a, chars...>();
+        }
+
+        template<int min, int max, char a, char... chars, p_enable_if(a == '0')>
+        constexpr inline auto remove_zeros_and_verify() noexcept {
+            return remove_zeros_and_verify<min, max, chars...>();
+        }
+
+        template<bool sig, char a, char b, char... chars,
+        p_enable_if((a == '0') && !(b == 'b' || b == 'B' || b == 'x' || b == 'X'))>
+        constexpr inline auto parse() noexcept {
+            return parseOct<sig>(remove_zeros_and_verify<0, 7, b, chars...>());
+        }
+
+        template<bool sig, char a, char b, char... chars,
+        p_enable_if((a == '0') && (b == 'b' || b == 'B'))>
+        constexpr inline auto parse() noexcept {
+            return parseBin<sig>(remove_zeros_and_verify<0, 1, chars...>());
+        }
+
+        template<bool sig, char a, char b, char... chars,
+        p_enable_if((a == '0') && (b == 'x' || b == 'X'))>
+        constexpr inline auto parse() noexcept {
+            return parseHex<sig>(remove_zeros_and_verify<0, 15, chars...>());
+        }
+
+        template<bool sig, char a, char... chars, p_enable_if(a != '0')>
+        constexpr inline auto parse() noexcept {
+            return parseDec<sig>(remove_zeros_and_verify<0, 10, a, chars...>());
+        }
+
+        template<bool sig, char a, p_enable_if(a == '0')>
+        constexpr inline auto parse() noexcept {
+            return Integer<1, sig>(0);
+        }
+    }
+
+    template<char... chars>
+    constexpr inline auto operator""_UI() noexcept {
+        return p_literal::parse<false, chars...>();
+    }
+
+    template<char... chars>
+    constexpr inline auto operator""_SI() noexcept {
+        return p_literal::parse<true, chars...>();
     }
 
 #undef p_enable_if
