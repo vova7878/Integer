@@ -1434,15 +1434,6 @@ namespace JIO {
             return T::data[T::length - 1].upperBit();
         }
 
-        void printv(std::ostream &out) {
-            size_t i = T::length;
-            T::data[--i].printv(out);
-            do {
-                out << ", ";
-                T::data[--i].printv(out);
-            } while (i > 0);
-        }
-
         constexpr inline I addOne() const noexcept {
             I tmp = *this;
             bool add = true;
