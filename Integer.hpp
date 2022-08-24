@@ -1700,7 +1700,7 @@ namespace JIO {
             return value.high;
         }
 
-        constexpr inline const typename V::U& uvalue() const {
+        constexpr inline const typename V::U& uvalue() const noexcept {
             return value.value;
         }
 
