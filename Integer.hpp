@@ -2015,7 +2015,6 @@ namespace JIO {
         template<size_t size, p_enable_if(p_getIntegerType(size) == native)>
         constexpr inline unsigned
         divremTen(Integer<size, false> &v) noexcept {
-            constexpr Integer<size, false> dc = div_ten_const<size>();
             unsigned tmp = unsigned(v);
             v /= Integer<size, false>(10);
             return tmp - unsigned(v) * 10;
