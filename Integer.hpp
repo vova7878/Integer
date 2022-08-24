@@ -309,6 +309,9 @@ namespace JIO {
 
         template<size_t size, bool sig>
         using native_int_type = typename native_int_type_h<size, sig>::type;
+
+        template<typename T, size_t length>
+        using array_ref = T(&)[length];
     }
 
     enum p_IType {
@@ -1181,8 +1184,7 @@ namespace JIO {
     struct p_Element_Types {
         typedef Integer<is, false> U;
         typedef Integer<is, true> S;
-        typedef Integer<is * 2, false> DU;
-        typedef Integer<is * 2, true> DS;
+        constexpr static size_t length = size / is;
     };
 
     template<size_t size, bool sig>
@@ -1202,12 +1204,10 @@ namespace JIO {
         typedef p_Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
-        typedef typename ET::DS DS;
-        typedef typename ET::DU DU;
         typedef p_array_Integer_Base I;
         typedef p_SHType<size> M;
         constexpr static M shdivider = size * 8;
-        constexpr static size_t length = size / sizeof (U);
+        constexpr static size_t length = ET::length; //size / sizeof (U);
 
         template<typename Tp, Tp... values>
         using A = p_i_seq::array_t<Tp, values...>;
@@ -1262,12 +1262,10 @@ namespace JIO {
         typedef p_Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
-        typedef typename ET::DS DS;
-        typedef typename ET::DU DU;
         typedef p_array_Integer_Base I;
         typedef p_SHType<size> M;
         constexpr static M shdivider = size * 8;
-        constexpr static size_t length = size / sizeof (U);
+        constexpr static size_t length = ET::length; //size / sizeof (U);
 
         template<typename Tp, Tp... values>
         using A = p_i_seq::array_t<Tp, values...>;
@@ -1325,8 +1323,6 @@ namespace JIO {
         typedef p_array_Integer_Impl<size, true> SI;
         typedef typename T::S S;
         typedef typename T::U U;
-        typedef typename T::DS DS;
-        typedef typename T::DU DU;
         typedef typename T::M M;
         template<typename Tp, Tp... values>
         using A = p_i_seq::array_t<Tp, values...>;
@@ -2155,6 +2151,18 @@ namespace JIO {
 
         constexpr inline typename V::U& uvalue() noexcept {
             return value.value;
+        }
+
+        constexpr inline
+        p_i_utils::array_ref<const typename V::U, p_Element_Types<size>::length>
+        uarray() const noexcept {
+            return value.data.data;
+        }
+
+        constexpr inline
+        p_i_utils::array_ref<typename V::U, p_Element_Types<size>::length>
+        uarray() noexcept {
+            return value.data.data;
         }
 
         template<typename T>
