@@ -297,3 +297,215 @@ TEST(Constructors, case_9_pow2) {
     EXPECT_EQ(cv1, 2);
     EXPECT_EQ(cv2, 1);
 }
+
+TEST(Constructors, bool_cast_native_unsigned) {
+    constexpr bool bt1 = true;
+    constexpr bool bf1 = false;
+    constexpr U<1> i1t = bt1;
+    constexpr U<1> i1f = bf1;
+    EXPECT_EQ(i1t, 1);
+    EXPECT_EQ(i1f, 0);
+    constexpr U<2> i2t = bt1;
+    constexpr U<2> i2f = bf1;
+    EXPECT_EQ(i2t, 1);
+    EXPECT_EQ(i2f, 0);
+    constexpr U<4> i4t = bt1;
+    constexpr U<4> i4f = bf1;
+    EXPECT_EQ(i4t, 1);
+    EXPECT_EQ(i4f, 0);
+    constexpr U<8> i8t = bt1;
+    constexpr U<8> i8f = bf1;
+    EXPECT_EQ(i8t, 1);
+    EXPECT_EQ(i8f, 0);
+
+    constexpr bool b1t2 = i1t;
+    constexpr bool b1f2 = i1f;
+    EXPECT_EQ(b1t2, true);
+    EXPECT_EQ(b1f2, false);
+    constexpr bool b2t2 = i2t;
+    constexpr bool b2f2 = i2f;
+    EXPECT_EQ(b2t2, true);
+    EXPECT_EQ(b2f2, false);
+    constexpr bool b4t2 = i4t;
+    constexpr bool b4f2 = i4f;
+    EXPECT_EQ(b4t2, true);
+    EXPECT_EQ(b4f2, false);
+    constexpr bool b8t2 = i8t;
+    constexpr bool b8f2 = i8f;
+    EXPECT_EQ(b8t2, true);
+    EXPECT_EQ(b8f2, false);
+}
+
+TEST(Constructors, bool_cast_native_signed) {
+    constexpr bool bt1 = true;
+    constexpr bool bf1 = false;
+    constexpr S<1> i1t = bt1;
+    constexpr S<1> i1f = bf1;
+    EXPECT_EQ(i1t, 1);
+    EXPECT_EQ(i1f, 0);
+    constexpr S<2> i2t = bt1;
+    constexpr S<2> i2f = bf1;
+    EXPECT_EQ(i2t, 1);
+    EXPECT_EQ(i2f, 0);
+    constexpr S<4> i4t = bt1;
+    constexpr S<4> i4f = bf1;
+    EXPECT_EQ(i4t, 1);
+    EXPECT_EQ(i4f, 0);
+    constexpr S<8> i8t = bt1;
+    constexpr S<8> i8f = bf1;
+    EXPECT_EQ(i8t, 1);
+    EXPECT_EQ(i8f, 0);
+
+    constexpr bool b1t2 = i1t;
+    constexpr bool b1f2 = i1f;
+    EXPECT_EQ(b1t2, true);
+    EXPECT_EQ(b1f2, false);
+    constexpr bool b2t2 = i2t;
+    constexpr bool b2f2 = i2f;
+    EXPECT_EQ(b2t2, true);
+    EXPECT_EQ(b2f2, false);
+    constexpr bool b4t2 = i4t;
+    constexpr bool b4f2 = i4f;
+    EXPECT_EQ(b4t2, true);
+    EXPECT_EQ(b4f2, false);
+    constexpr bool b8t2 = i8t;
+    constexpr bool b8f2 = i8f;
+    EXPECT_EQ(b8t2, true);
+    EXPECT_EQ(b8f2, false);
+}
+
+TEST(Constructors, bool_cast_pow2_unsigned) {
+    constexpr bool bt1 = true;
+    constexpr bool bf1 = false;
+    constexpr U<16> i16t = bt1;
+    constexpr U<16> i16f = bf1;
+    EXPECT_EQ(i16t, 1);
+    EXPECT_EQ(i16f, 0);
+
+    constexpr bool bt2 = i16t;
+    constexpr bool bf2 = i16f;
+    EXPECT_EQ(bt2, true);
+    EXPECT_EQ(bf2, false);
+}
+
+TEST(Constructors, bool_cast_pow2_signed) {
+    constexpr bool bt1 = true;
+    constexpr bool bf1 = false;
+    constexpr S<16> i16t = bt1;
+    constexpr S<16> i16f = bf1;
+    EXPECT_EQ(i16t, 1);
+    EXPECT_EQ(i16f, 0);
+
+    constexpr bool bt2 = i16t;
+    constexpr bool bf2 = i16f;
+    EXPECT_EQ(bt2, true);
+    EXPECT_EQ(bf2, false);
+}
+
+TEST(Constructors, bool_cast_2_native_unsigned) {
+    constexpr U<1> i1t = true;
+    constexpr U<1> i1t2 = U<1>(-1);
+    constexpr U<1> i1f = false;
+    EXPECT_TRUE(i1t);
+    EXPECT_FALSE(!i1t);
+    EXPECT_TRUE(i1t2);
+    EXPECT_FALSE(!i1t2);
+    EXPECT_FALSE(i1f);
+    EXPECT_TRUE(!i1f);
+
+    constexpr U<2> i2t = true;
+    constexpr U<2> i2t2 = U<2>(-1);
+    constexpr U<2> i2f = false;
+    EXPECT_TRUE(i2t);
+    EXPECT_FALSE(!i2t);
+    EXPECT_TRUE(i2t2);
+    EXPECT_FALSE(!i2t2);
+    EXPECT_FALSE(i2f);
+    EXPECT_TRUE(!i2f);
+
+    constexpr U<4> i4t = true;
+    constexpr U<4> i4t2 = U<4>(-1);
+    constexpr U<4> i4f = false;
+    EXPECT_TRUE(i4t);
+    EXPECT_FALSE(!i4t);
+    EXPECT_TRUE(i4t2);
+    EXPECT_FALSE(!i4t2);
+    EXPECT_FALSE(i4f);
+    EXPECT_TRUE(!i4f);
+
+    constexpr U<8> i8t = true;
+    constexpr U<8> i8t2 = U<8>(-1);
+    constexpr U<8> i8f = false;
+    EXPECT_TRUE(i8t);
+    EXPECT_FALSE(!i8t);
+    EXPECT_TRUE(i8t2);
+    EXPECT_FALSE(!i8t2);
+    EXPECT_FALSE(i8f);
+    EXPECT_TRUE(!i8f);
+}
+
+TEST(Constructors, bool_cast_2_native_signed) {
+    constexpr S<1> i1t = true;
+    constexpr S<1> i1t2 = S<1>(-1);
+    constexpr S<1> i1f = false;
+    EXPECT_TRUE(i1t);
+    EXPECT_FALSE(!i1t);
+    EXPECT_TRUE(i1t2);
+    EXPECT_FALSE(!i1t2);
+    EXPECT_FALSE(i1f);
+    EXPECT_TRUE(!i1f);
+
+    constexpr S<2> i2t = true;
+    constexpr S<2> i2t2 = S<2>(-1);
+    constexpr S<2> i2f = false;
+    EXPECT_TRUE(i2t);
+    EXPECT_FALSE(!i2t);
+    EXPECT_TRUE(i2t2);
+    EXPECT_FALSE(!i2t2);
+    EXPECT_FALSE(i2f);
+    EXPECT_TRUE(!i2f);
+
+    constexpr S<4> i4t = true;
+    constexpr S<4> i4t2 = S<4>(-1);
+    constexpr S<4> i4f = false;
+    EXPECT_TRUE(i4t);
+    EXPECT_FALSE(!i4t);
+    EXPECT_TRUE(i4t2);
+    EXPECT_FALSE(!i4t2);
+    EXPECT_FALSE(i4f);
+    EXPECT_TRUE(!i4f);
+
+    constexpr S<8> i8t = true;
+    constexpr S<8> i8t2 = S<8>(-1);
+    constexpr S<8> i8f = false;
+    EXPECT_TRUE(i8t);
+    EXPECT_FALSE(!i8t);
+    EXPECT_TRUE(i8t2);
+    EXPECT_FALSE(!i8t2);
+    EXPECT_FALSE(i8f);
+    EXPECT_TRUE(!i8f);
+}
+
+TEST(Constructors, bool_cast_2_pow2_unsigned) {
+    constexpr U<16> i16t = true;
+    constexpr U<16> i16t2 = U<16>(-1);
+    constexpr U<16> i16f = false;
+    EXPECT_TRUE(i16t);
+    EXPECT_FALSE(!i16t);
+    EXPECT_TRUE(i16t2);
+    EXPECT_FALSE(!i16t2);
+    EXPECT_FALSE(i16f);
+    EXPECT_TRUE(!i16f);
+}
+
+TEST(Constructors, bool_cast_2_pow2_signed) {
+    constexpr S<16> i16t = true;
+    constexpr S<16> i16t2 = S<16>(-1);
+    constexpr S<16> i16f = false;
+    EXPECT_TRUE(i16t);
+    EXPECT_FALSE(!i16t);
+    EXPECT_TRUE(i16t2);
+    EXPECT_FALSE(!i16t2);
+    EXPECT_FALSE(i16f);
+    EXPECT_TRUE(!i16f);
+}
