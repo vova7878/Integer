@@ -2585,6 +2585,11 @@ namespace JIO {
             return out;
         }
 
+        template<bool sig>
+        constexpr inline auto parseHex(array_t<int>) noexcept {
+            return Integer<1, sig>::ZERO();
+        }
+
         template<bool sig, size_t bytes, int... nums>
         constexpr inline auto parseDec_h(array_t<int, nums...> arr) noexcept {
             using I = Integer<bytes, sig>;
@@ -2617,6 +2622,11 @@ namespace JIO {
             return out;
         }
 
+        template<bool sig>
+        constexpr inline auto parseOct(array_t<int>) noexcept {
+            return Integer<1, sig>::ZERO();
+        }
+
         template<bool sig, int... nums,
         size_t bytes = get_bytes<sig, 1, nums...>()>
         constexpr inline auto parseBin(array_t<int, nums...> arr) noexcept {
@@ -2629,6 +2639,11 @@ namespace JIO {
             return out;
         }
 
+        template<bool sig>
+        constexpr inline auto parseBin(array_t<int>) noexcept {
+            return Integer<1, sig>::ZERO();
+        }
+
         template<int min, int max, int value,
         p_enable_if((value >= min) && (value <= max))>
         constexpr inline int contains() noexcept {
@@ -2639,6 +2654,11 @@ namespace JIO {
         constexpr inline auto verify() noexcept {
             return array_t<int, contains<min, max,
                     p_i_utils::indexOfDigit<chars>()>()...>();
+        }
+
+        template<int min, int max>
+        constexpr inline auto remove_zeros_and_verify() noexcept {
+            return array_t<int>();
         }
 
         template<int min, int max, char a, char... chars, p_enable_if(a != '0')>
