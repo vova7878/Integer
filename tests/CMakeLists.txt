@@ -21,6 +21,7 @@ set(SOURCES
     testcases/info.cpp
     testcases/accessors.cpp
     testcases/constructors.cpp
+    testcases/literals.cpp
 )
 
 add_executable(${PROJECT} ${SOURCES})
