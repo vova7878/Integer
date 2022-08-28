@@ -185,31 +185,31 @@ namespace JIO {
         }
 
         constexpr inline size_t numberOfLeadingZeros4Bit_n(uint8_t i) noexcept {
-            return (i >= 1 << 2) ?
+            return (i >= 1U << 2) ?
                     numberOfLeadingZeros2Bit_n(i >> 2) :
                     numberOfLeadingZeros2Bit_n(i) + 2;
         }
 
         constexpr inline size_t numberOfLeadingZeros_n(uint8_t i) noexcept {
-            return (i >= 1 << 4) ?
+            return (i >= 1U << 4) ?
                     numberOfLeadingZeros4Bit_n(i >> 4) :
                     numberOfLeadingZeros4Bit_n(i) + 4;
         }
 
         constexpr inline size_t numberOfLeadingZeros_n(uint16_t i) noexcept {
-            return (i >= 1 << 8) ?
+            return (i >= 1U << 8) ?
                     numberOfLeadingZeros_n(uint8_t(i >> 8)) :
                     numberOfLeadingZeros_n(uint8_t(i)) + 8;
         }
 
         constexpr inline size_t numberOfLeadingZeros_n(uint32_t i) noexcept {
-            return (i >= 1 << 16) ?
+            return (i >= 1UL << 16) ?
                     numberOfLeadingZeros_n(uint16_t(i >> 16)) :
                     numberOfLeadingZeros_n(uint16_t(i)) + 16;
         }
 
         constexpr inline size_t numberOfLeadingZeros_n(uint64_t i) noexcept {
-            return (i >= uint64_t(1) << 32) ?
+            return (i >= 1ULL << 32) ?
                     numberOfLeadingZeros_n(uint32_t(i >> 32)) :
                     numberOfLeadingZeros_n(uint32_t(i)) + 32;
         }
