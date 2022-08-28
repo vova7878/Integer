@@ -1486,6 +1486,11 @@ namespace JIO {
         return size * 8 - value.numberOfLeadingZeros();
     }
 
+    template<size_t size1, size_t size2, bool sig1, bool sig2>
+    using result_t = Integer<max(size1, size2),
+    (size1 == size2) ? sig1 && sig2 :
+    (size1 > size2 ? sig1 : sig2)>;
+
     template<size_t size, bool sig>
     class Integer {
     private:
@@ -1831,56 +1836,56 @@ namespace JIO {
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator+(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value + R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator-(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value - R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator*(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value * R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator/(const Integer<size2, sig2> &v2) const noexcept {
             return typename R::V(R(*this).value / R(v2).value);
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator%(const Integer<size2, sig2> &v2) const noexcept {
             return typename R::V(R(*this).value % R(v2).value);
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator|(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value | R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator&(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value & R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer<max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline R
         operator^(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value ^ R(v2).value;
@@ -1911,42 +1916,42 @@ namespace JIO {
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer < max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline bool
         operator==(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value == R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer < max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline bool
         operator!=(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value != R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer < max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline bool
         operator<=(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value <= R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer < max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline bool
         operator>=(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value >= R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer < max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline bool
         operator<(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value < R(v2).value;
         }
 
         template<size_t size2, bool sig2,
-        typename R = Integer < max(size, size2), sig && sig2>>
+        typename R = result_t<size, size2, sig, sig2>>
         constexpr inline bool
         operator>(const Integer<size2, sig2> &v2) const noexcept {
             return R(*this).value > R(v2).value;
@@ -2128,14 +2133,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator+(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) + R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator+(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) + R(v2);
@@ -2165,14 +2170,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator-(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) - R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator-(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) - R(v2);
@@ -2202,14 +2207,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator*(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) * R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator*(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) * R(v2);
@@ -2239,14 +2244,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator/(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) / R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator/(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) / R(v2);
@@ -2276,14 +2281,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator%(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) % R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator%(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) % R(v2);
@@ -2313,14 +2318,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator|(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) | R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator|(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) | R(v2);
@@ -2350,14 +2355,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator&(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) & R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator&(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) & R(v2);
@@ -2387,14 +2392,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator^(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
         return R(v1) ^ R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
-    typename R = Integer<max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>>
+    typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
     constexpr inline R
     operator^(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) ^ R(v2);
@@ -2426,84 +2431,84 @@ namespace JIO {
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator==(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) == R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator==(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) == R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator!=(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) != R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator!=(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) != R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator<=(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) <= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator<=(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) <= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator>=(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) >= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator>=(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) >= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator<(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) < R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator<(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) < R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator>(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) > R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
     constexpr inline bool
     operator>(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer < max(size1, sizeof (T)), sig1 && (p_is_signed<T>())>;
+        using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) > R(v2);
     }
 
