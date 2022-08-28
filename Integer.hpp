@@ -307,6 +307,8 @@ namespace JIO {
             typedef int64_t type;
         };
 
+        constexpr static size_t max_native_size = 8;
+
         template<size_t size, bool sig>
         using native_int_type = typename native_int_type_h<size, sig>::type;
 
@@ -1177,7 +1179,7 @@ namespace JIO {
 
     template<typename T>
     constexpr inline bool p_is_signed() noexcept {
-        return std::is_signed<T>::value;
+        return T(-1) < T(0);
     }
 
     template<size_t size, size_t is = lowestOneBit(size)>
@@ -1824,15 +1826,15 @@ namespace JIO {
     }
 
     template<size_t size, typename R = Integer<size * 2, false>,
-    p_enable_if((size == 1) || (size == 2) || (size == 4))>
+    p_enable_if((p_getIntegerType(size) == native) &&
+            (size != p_i_utils::max_native_size))>
     constexpr inline R
     wmultiply(const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
         return R(v1) * R(v2);
     }
 
-    template<size_t size,
-    p_enable_if((size == 8) || (p_getIntegerType(size) == pow2))>
+    template<size_t size, p_enable_if(size == p_i_utils::max_native_size)>
     constexpr inline Integer<size * 2, false> wmultiply(
             const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
@@ -1841,6 +1843,23 @@ namespace JIO {
         using U4 = Integer<size * 2, false>;
         U1 a = U1(v1 >> (size * 4)), b = U1(v1);
         U1 c = U1(v2 >> (size * 4)), d = U1(v2);
+        U2 ac = wmultiply(a, c);
+        U2 bd = wmultiply(b, d);
+        U2 ad = wmultiply(a, d);
+        U2 bc = wmultiply(b, c);
+        U4 abcd = U4(ad) + U4(bc);
+        return U4(bd, ac) + (abcd << (size * 4));
+    }
+
+    template<size_t size, p_enable_if(p_getIntegerType(size) == pow2)>
+    constexpr inline Integer<size * 2, false> wmultiply(
+            const Integer<size, false> &v1,
+            const Integer<size, false> &v2) noexcept {
+        using U1 = Integer < size / 2, false >;
+        using U2 = Integer<size, false>;
+        using U4 = Integer<size * 2, false>;
+        U1 a = v1.uhigh(), b = v1.ulow();
+        U1 c = v2.uhigh(), d = v2.ulow();
         U2 ac = wmultiply(a, c);
         U2 bd = wmultiply(b, d);
 #if 1 //The Karatsuba algorithm
@@ -1861,7 +1880,7 @@ namespace JIO {
         if (U2::sub_overflow(U2(abcd_low), bd, abcd_low)) {
             --abcd_high;
         }
-        U4 abcd = U4(abcd_low, abcd_high);
+        U4 abcd = U4(abcd_low, U2(abcd_high));
 #else
         U2 ad = wmultiply(a, d);
         U2 bc = wmultiply(b, c);
