@@ -1485,27 +1485,21 @@ namespace JIO {
 
     private:
 
-        template<size_t index>
-        constexpr inline static p_i_seq::any
-        leftShiftOneBit_h(I &v) noexcept {
-            U::leftShiftOneBit(v.data[index], v.data[index - 1].upperBit());
-            return {};
-        }
-
         template<size_t... index>
-        constexpr inline static void
-        leftShiftOneBit_h(I &v, A<size_t, index...>) noexcept {
-            p_i_seq::unused_array<sizeof...(index)>({
-                (leftShiftOneBit_h < T::length - index > (v))...
+        constexpr inline static bool
+        leftShiftOneBit_h(I &v, bool bit, A<size_t, index...>) noexcept {
+            p_i_seq::unused_array<T::length>({
+                (bit = U::leftShiftOneBit(v.data[index], bit))...
             });
+            return bit;
         }
 
     public:
 
-        constexpr inline static void
+        constexpr inline static bool
         leftShiftOneBit(I &value, bool bit) noexcept {
-            leftShiftOneBit_h(value, p_i_seq::make_array<size_t, 1, T::length> ());
-            U::leftShiftOneBit(value.data[0], bit);
+            return leftShiftOneBit_h(value, bit,
+                    p_i_seq::make_array<size_t, 0, T::length>());
         }
 
     public:
