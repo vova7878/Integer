@@ -50,16 +50,6 @@ namespace JIO {
         return lowestOneBit(i) == i;
     }
 
-    template<typename T>
-    constexpr const T& max(const T &v1, const T &v2) noexcept {
-        return v1 < v2 ? v2 : v1;
-    }
-
-    template<typename T>
-    constexpr const T& min(const T &v1, const T &v2) noexcept {
-        return v1 < v2 ? v1 : v2;
-    }
-
     namespace p_i_seq {
 
         template <typename T, T... values>
@@ -74,7 +64,7 @@ namespace JIO {
 
         template <typename T, size_t length>
         struct v_array_t {
-            T data[max(size_t(1), length)];
+            T data[length == 0 ? 1 : length];
 
             constexpr inline const T& operator[](size_t index) const noexcept {
                 return data[index];
@@ -1508,7 +1498,7 @@ namespace JIO {
     }
 
     template<size_t size1, size_t size2, bool sig1, bool sig2>
-    using result_t = Integer<max(size1, size2),
+    using result_t = Integer<(size1 < size2 ? size2 : size1),
     (size1 == size2) ? sig1 && sig2 :
     (size1 > size2 ? sig1 : sig2)>;
 
