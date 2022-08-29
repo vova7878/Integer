@@ -656,9 +656,11 @@ namespace JIO {
             return T::decrement_overflow(value);
         }
 
-        constexpr inline static void
+        constexpr inline static bool
         leftShiftOneBit(I &value, bool bit) noexcept {
+            bool tmp = value.upperBit();
             value.value = (value.value << 1) | U(bit);
+            return tmp;
         }
 
         constexpr inline size_t numberOfLeadingZeros() const noexcept {
@@ -1052,10 +1054,10 @@ namespace JIO {
             return T::decrement_overflow(value);
         }
 
-        constexpr inline static void
+        constexpr inline static bool
         leftShiftOneBit(I &value, bool bit) noexcept {
-            U::leftShiftOneBit(value.high, value.low.upperBit());
-            U::leftShiftOneBit(value.low, bit);
+            return U::leftShiftOneBit(value.high,
+                    U::leftShiftOneBit(value.low, bit));
         }
 
         constexpr inline size_t numberOfLeadingZeros() const noexcept {
@@ -1687,9 +1689,9 @@ namespace JIO {
             return V::decrement_overflow(value.value);
         }
 
-        constexpr inline static void leftShiftOneBit(
-                Integer &value, bool bit) noexcept {
-            V::leftShiftOneBit(value.value, bit);
+        constexpr inline static bool
+        leftShiftOneBit(Integer &value, bool bit) noexcept {
+            return V::leftShiftOneBit(value.value, bit);
         }
 
         constexpr inline size_t numberOfLeadingZeros() const noexcept {
