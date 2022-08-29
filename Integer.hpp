@@ -355,14 +355,12 @@ namespace JIO {
 
     template<size_t size>
     struct p_native_Integer_Base<size, false> {
-    private:
         typedef p_i_utils::native_int_type<size, true> S;
         typedef p_i_utils::native_int_type<size, false> U;
         typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
         U value;
-    public:
 
         constexpr inline p_native_Integer_Base() noexcept = default;
 
@@ -422,24 +420,16 @@ namespace JIO {
         constexpr inline bool operator<=(const I &other) const noexcept {
             return value <= other.value;
         }
-
-        template<size_t size2, bool sig2>
-        friend struct p_native_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t size>
     struct p_native_Integer_Base<size, true> {
-    private:
         typedef p_i_utils::native_int_type<size, true> S;
         typedef p_i_utils::native_int_type<size, false> U;
         typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
         U value;
-    public:
 
         constexpr inline p_native_Integer_Base() noexcept = default;
 
@@ -561,17 +551,10 @@ namespace JIO {
         constexpr inline bool operator<=(const I &other) const noexcept {
             return S(value) <= S(other.value);
         }
-
-        template<size_t size2, bool sig2>
-        friend struct p_native_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t size, bool sig>
     struct p_native_Integer_Impl : public p_native_Integer_Base<size, sig> {
-    private:
         typedef p_native_Integer_Base<size, sig> T;
         typedef p_native_Integer_Impl<size, sig> I;
         typedef p_native_Integer_Impl<size, false> UI;
@@ -579,8 +562,6 @@ namespace JIO {
         typedef typename T::U U;
         typedef typename T::S S;
         typedef typename T::M M;
-
-    public:
 
         using T::T;
 
@@ -711,13 +692,10 @@ namespace JIO {
         constexpr inline I operator~() const noexcept {
             return I(~T::value);
         }
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t half, bool sig>
-    class p_pow2_Integer_Impl;
+    struct p_pow2_Integer_Impl;
 
     template<size_t size, bool sig>
     struct p_Integer_Impl <size, sig, pow2> {
@@ -725,11 +703,10 @@ namespace JIO {
     };
 
     template<size_t half, bool sig>
-    class p_pow2_Integer_Base;
+    struct p_pow2_Integer_Base;
 
     template<size_t half>
-    class p_pow2_Integer_Base<half, false> {
-    private:
+    struct p_pow2_Integer_Base<half, false> {
         typedef Integer<half, true> S;
         typedef Integer<half, false> U;
         typedef p_pow2_Integer_Base<half, false> I;
@@ -749,7 +726,6 @@ namespace JIO {
             }
             return I(value.high >> (shiftDistance - half * 8), U::ZERO());
         }
-    public:
 
         constexpr inline p_pow2_Integer_Base() noexcept = default;
 
@@ -829,17 +805,10 @@ namespace JIO {
         constexpr inline I operator>>(const M other) const noexcept {
             return rightShift(*this, other & shmask);
         }
-
-        template<size_t size2, bool sig2>
-        friend class p_pow2_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t half>
-    class p_pow2_Integer_Base<half, true> {
-    private:
+    struct p_pow2_Integer_Base<half, true> {
         typedef Integer<half, true> S;
         typedef Integer<half, false> U;
         typedef p_pow2_Integer_Base<half, true> I;
@@ -860,7 +829,6 @@ namespace JIO {
             return I(S(value.high) >> (shiftDistance - half * 8),
                     value.high.upperBit() ? ~U::ZERO() : U::ZERO());
         }
-    public:
 
         constexpr inline p_pow2_Integer_Base() noexcept = default;
 
@@ -908,17 +876,10 @@ namespace JIO {
         constexpr inline I operator>>(const M other) const noexcept {
             return rightShift(*this, other & shmask);
         }
-
-        template<size_t size2, bool sig2>
-        friend class p_pow2_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t half, bool sig>
-    class p_pow2_Integer_Impl : public p_pow2_Integer_Base<half, sig> {
-    private:
+    struct p_pow2_Integer_Impl : public p_pow2_Integer_Base<half, sig> {
         typedef p_pow2_Integer_Base<half, sig> T;
         typedef p_pow2_Integer_Impl<half, sig> I;
         typedef p_pow2_Integer_Impl<half, false> UI;
@@ -939,8 +900,6 @@ namespace JIO {
             }
             return I(U::ZERO(), value.low << (shiftDistance - half * 8));
         }
-
-    public:
 
         using T::T;
 
@@ -1137,9 +1096,6 @@ namespace JIO {
         constexpr inline bool operator!=(const I &other) const noexcept {
             return (T::low != other.low) || (T::high != other.high);
         }
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<typename T1, typename T2>
@@ -1885,11 +1841,71 @@ namespace JIO {
     (size1 == size2) ? sig1 && sig2 :
     (size1 > size2 ? sig1 : sig2)>;
 
+    template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
+    class Integer_Base;
+
     template<size_t size, bool sig>
-    class Integer {
+    class Integer_Base<size, sig, native> {
     private:
         using V = typename p_Integer_Impl<size, sig>::type;
         V value;
+
+        constexpr inline Integer_Base() noexcept = default;
+
+        constexpr inline Integer_Base(const V n) noexcept : value(n) { }
+
+    public:
+
+        constexpr inline const typename V::U& uvalue() const noexcept {
+            return value.value;
+        }
+
+        constexpr inline typename V::U& uvalue() noexcept {
+            return value.value;
+        }
+
+        template<size_t, bool>
+        friend class Integer;
+    };
+
+    template<size_t size, bool sig>
+    class Integer_Base<size, sig, pow2> {
+    private:
+        using V = typename p_Integer_Impl<size, sig>::type;
+        V value;
+
+        constexpr inline Integer_Base() noexcept = default;
+
+        constexpr inline Integer_Base(const V n) noexcept : value(n) { }
+
+    public:
+
+        constexpr inline const typename V::U& ulow() const noexcept {
+            return value.low;
+        }
+
+        constexpr inline typename V::U& ulow() noexcept {
+            return value.low;
+        }
+
+        constexpr inline const typename V::U& uhigh() const noexcept {
+            return value.high;
+        }
+
+        constexpr inline typename V::U& uhigh() noexcept {
+            return value.high;
+        }
+
+        template<size_t, bool>
+        friend class Integer;
+    };
+
+    template<size_t size, bool sig>
+    class Integer : public Integer_Base<size, sig> {
+    private:
+        using B = Integer_Base<size, sig>;
+        using V = typename B::V;
+        using B::value;
 
         template<size_t size2, bool sig2,
         bool = (p_getIntegerType(size) == native) &&
@@ -2029,7 +2045,7 @@ namespace JIO {
             return downcast_h<size2, sig2>::downcast(*this);
         }
 
-        constexpr inline Integer(const V n) noexcept : value(n) { }
+        constexpr inline Integer(const V n) noexcept : B(n) { }
     public:
 
         constexpr inline static size_t SIZE() noexcept {
@@ -2139,30 +2155,6 @@ namespace JIO {
             return *this;
         }
 
-        constexpr inline const typename V::U& ulow() const noexcept {
-            return value.low;
-        }
-
-        constexpr inline typename V::U& ulow() noexcept {
-            return value.low;
-        }
-
-        constexpr inline const typename V::U& uhigh() const noexcept {
-            return value.high;
-        }
-
-        constexpr inline typename V::U& uhigh() noexcept {
-            return value.high;
-        }
-
-        constexpr inline const typename V::U& uvalue() const noexcept {
-            return value.value;
-        }
-
-        constexpr inline typename V::U& uvalue() noexcept {
-            return value.value;
-        }
-
         constexpr inline
         p_i_utils::array_ref<const typename V::U, p_Element_Types<size>::length>
         uarray() const noexcept {
@@ -2177,31 +2169,33 @@ namespace JIO {
 
         template<typename T>
         constexpr inline Integer(p_bool_t<T> n) noexcept :
-        value(typename V::U(n)) { }
+        Integer(V(typename V::U(n))) { }
 
         template<size_t size1, bool sig1, size_t size2, bool sig2,
         p_enable_if((p_getIntegerType(size) == pow2) &&
                 (size1 <= size / 2) && (size2 <= size / 2))>
         constexpr inline Integer(const Integer<size1, sig1> &low,
-                const Integer<size2, sig2> &high) noexcept : value(low, high) { }
+                const Integer<size2, sig2> &high) noexcept :
+        Integer(V(low, high)) { }
 
         template<typename T1, typename T2,
         p_enable_if((p_getIntegerType(size) == pow2) &&
                 (sizeof (T1) <= size / 2) && (sizeof (T2) <= size / 2))>
         constexpr inline Integer(const p_int_t<T1> low,
-                const p_int_t<T2> high) noexcept : value(low, high) { }
+                const p_int_t<T2> high) noexcept : Integer(V(low, high)) { }
 
         template<typename T, size_t size2, bool sig2,
         p_enable_if((p_getIntegerType(size) == pow2) &&
                 (sizeof (T) <= size / 2) && (size2 <= size / 2))>
         constexpr inline Integer(const p_int_t<T> low,
-                const Integer<size2, sig2> &high) noexcept : value(low, high) { }
+                const Integer<size2, sig2> &high) noexcept :
+        Integer(V(low, high)) { }
 
         template<size_t size2, bool sig2, typename T,
         p_enable_if((p_getIntegerType(size) == pow2) &&
                 (size2 <= size / 2) && (sizeof (T) <= size / 2))>
         constexpr inline Integer(const Integer<size2, sig2> &low,
-                const p_int_t<T> high) noexcept : value(low, high) { }
+                const p_int_t<T> high) noexcept : Integer(V(low, high)) { }
 
     private:
 
@@ -2237,11 +2231,11 @@ namespace JIO {
 
         template<typename T, p_enable_if(size >= sizeof (T))>
         constexpr inline Integer(const p_int_t<T> n) noexcept :
-        value(tcast_h<T>::tcast(n)) { }
+        Integer(V(tcast_h<T>::tcast(n))) { }
 
         template<typename T, p_enable_if(size < sizeof (T))>
         constexpr explicit inline Integer(const p_int_t<T> n) noexcept :
-        value(tcast_h<T>::tcast(n)) { }
+        Integer(V(tcast_h<T>::tcast(n))) { }
 
         template<size_t size2, bool sig2, p_enable_if(size2 >= size)>
         constexpr inline operator Integer<size2, sig2>() const noexcept {
@@ -2466,7 +2460,7 @@ namespace JIO {
         friend struct p_native_Integer_Impl;
 
         template<size_t size2, bool sig2>
-        friend class p_pow2_Integer_Impl;
+        friend struct p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
         friend class p_array_Integer_Impl;
