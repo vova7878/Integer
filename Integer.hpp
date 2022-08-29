@@ -1994,13 +1994,13 @@ namespace JIO {
             return tmp;
         }
 
-        template<size_t size2, bool sig2>
+        template<size_t, bool>
         friend class Integer;
 
-        template<size_t size2, bool sig2>
+        template<size_t, bool>
         friend struct p_native_Integer_Impl;
 
-        template<size_t size2, bool sig2>
+        template<size_t, bool>
         friend struct p_pow2_Integer_Impl;
     };
 
