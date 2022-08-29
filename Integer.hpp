@@ -1138,10 +1138,10 @@ namespace JIO {
     };
 
     template<size_t size, bool sig>
-    class p_array_Integer_Base;
+    struct p_array_Integer_Base;
 
     template<size_t size, bool sig>
-    class p_array_Integer_Impl;
+    struct p_array_Integer_Impl;
 
     template<size_t size, bool sig>
     struct p_Integer_Impl <size, sig, array> {
@@ -1149,8 +1149,7 @@ namespace JIO {
     };
 
     template<size_t size>
-    class p_array_Integer_Base<size, false> {
-    private:
+    struct p_array_Integer_Base<size, false> {
         typedef p_Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
@@ -1167,8 +1166,6 @@ namespace JIO {
 
         constexpr explicit inline
         p_array_Integer_Base(AT<length> arr) noexcept : data(arr) { }
-
-    public:
 
         constexpr inline p_array_Integer_Base() noexcept = default;
 
@@ -1176,8 +1173,6 @@ namespace JIO {
             return false;
         }
 
-    private:
-
         template<size_t a_len>
         constexpr inline static U
         value_for_index(AT<a_len> arr, size_t index, U fill) noexcept {
@@ -1190,25 +1185,16 @@ namespace JIO {
             return {value_for_index(arr, index, fill)...};
         }
 
-    public:
-
         template<typename... Tp>
         constexpr explicit inline
         p_array_Integer_Base(Tp... arr) noexcept :
         data(set_h(AT<sizeof...(Tp)>{U(arr)...},
         p_i_seq::make_array<size_t, 0, length>(),
                 (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
-
-        template<size_t size2, bool sig2>
-        friend class p_array_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t size>
-    class p_array_Integer_Base<size, true> {
-    private:
+    struct p_array_Integer_Base<size, true> {
         typedef p_Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
@@ -1226,15 +1212,11 @@ namespace JIO {
         constexpr explicit inline
         p_array_Integer_Base(AT<length> arr) noexcept : data(arr) { }
 
-    public:
-
         constexpr inline p_array_Integer_Base() noexcept = default;
 
         constexpr inline bool isNegative() const noexcept {
             return data[length - 1].upperBit();
         }
-
-    private:
 
         template<size_t a_len>
         constexpr inline static U
@@ -1248,25 +1230,16 @@ namespace JIO {
             return {value_for_index(arr, index, fill)...};
         }
 
-    public:
-
         template<typename... Tp>
         constexpr explicit inline
         p_array_Integer_Base(Tp... arr) noexcept :
         data(set_h(AT<sizeof...(Tp)>{U(arr)...},
         p_i_seq::make_array<size_t, 0, length>(),
                 (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
-
-        template<size_t size2, bool sig2>
-        friend class p_array_Integer_Impl;
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<size_t size, bool sig>
-    class p_array_Integer_Impl : p_array_Integer_Base<size, sig> {
-    private:
+    struct p_array_Integer_Impl : p_array_Integer_Base<size, sig> {
         typedef p_array_Integer_Base<size, sig> T;
         typedef p_array_Integer_Impl<size, sig> I;
         typedef p_array_Integer_Impl<size, false> UI;
@@ -1279,7 +1252,6 @@ namespace JIO {
         template<size_t len>
         using AT = p_i_seq::v_array_t<U, len>;
 
-    public:
         using T::T;
 
         constexpr inline p_array_Integer_Impl() noexcept = default;
@@ -1291,8 +1263,6 @@ namespace JIO {
 
         constexpr inline
         p_array_Integer_Impl(const T &obj) noexcept : T(obj) { }
-
-    private:
 
         template<size_t size2, bool sig2, size_t... index>
         constexpr inline static void
@@ -1311,8 +1281,6 @@ namespace JIO {
                 (out.template setByte<index>(value.template getByte<index>()))...
             });
         }
-
-    public:
 
         template<size_t size2, bool sig2, p_enable_if(size2 > size)>
         constexpr inline static I
@@ -1358,8 +1326,6 @@ namespace JIO {
             return I(AT<T::length>{});
         }
 
-    private:
-
         template<size_t... index>
         constexpr inline static bool
         isZero_h(const I &v, A<size_t, index...>) noexcept {
@@ -1369,8 +1335,6 @@ namespace JIO {
             });
             return out;
         }
-
-    public:
 
         constexpr inline bool isZero() const noexcept {
             return isZero_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
@@ -1429,8 +1393,6 @@ namespace JIO {
             T::data[arr_index].template setBit<n>(v);
         }
 
-    private:
-
         template<size_t... index>
         constexpr inline static bool
         leftShiftOneBit_h(I &v, bool bit, A<size_t, index...>) noexcept {
@@ -1440,15 +1402,11 @@ namespace JIO {
             return bit;
         }
 
-    public:
-
         constexpr inline static bool
         leftShiftOneBit(I &value, bool bit) noexcept {
             return leftShiftOneBit_h(value, bit,
                     p_i_seq::make_array<size_t, 0, T::length>());
         }
-
-    public:
 
         constexpr inline I operator+() const noexcept {
             return *this;
@@ -1458,21 +1416,15 @@ namespace JIO {
             return (~(*this)).addOne();
         }
 
-    private:
-
         template<size_t... index>
         constexpr inline static I
         neg_h(const I &v, A<size_t, index...>) noexcept {
             return I((~v.data[index])...);
         }
 
-    public:
-
         constexpr inline I operator~() const noexcept {
             return neg_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
         }
-
-    private:
 
         template<size_t... index>
         constexpr inline static I
@@ -1492,8 +1444,6 @@ namespace JIO {
             return I((v1.data[index] ^ v2.data[index])...);
         }
 
-    public:
-
         constexpr inline I operator|(const I &v2) const noexcept {
             return or_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
         }
@@ -1505,9 +1455,6 @@ namespace JIO {
         constexpr inline I operator^(const I &v2) const noexcept {
             return xor_h(*this, v2, p_i_seq::make_array<size_t, 0, T::length>());
         }
-
-        template<size_t size2, bool sig2>
-        friend class Integer;
     };
 
     template<typename U, typename S, bool sig, typename V, p_enable_if(sig)>
@@ -1901,6 +1848,34 @@ namespace JIO {
     };
 
     template<size_t size, bool sig>
+    class Integer_Base<size, sig, array> {
+    private:
+        using V = typename p_Integer_Impl<size, sig>::type;
+        V value;
+
+        constexpr inline Integer_Base() noexcept = default;
+
+        constexpr inline Integer_Base(const V n) noexcept : value(n) { }
+
+    public:
+
+        constexpr inline
+        p_i_utils::array_ref<const typename V::U, p_Element_Types<size>::length>
+        uarray() const noexcept {
+            return value.data.data;
+        }
+
+        constexpr inline
+        p_i_utils::array_ref<typename V::U, p_Element_Types<size>::length>
+        uarray() noexcept {
+            return value.data.data;
+        }
+
+        template<size_t, bool>
+        friend class Integer;
+    };
+
+    template<size_t size, bool sig>
     class Integer : public Integer_Base<size, sig> {
     private:
         using B = Integer_Base<size, sig>;
@@ -2153,18 +2128,6 @@ namespace JIO {
 
         constexpr inline Integer<size, false> u() const noexcept {
             return *this;
-        }
-
-        constexpr inline
-        p_i_utils::array_ref<const typename V::U, p_Element_Types<size>::length>
-        uarray() const noexcept {
-            return value.data.data;
-        }
-
-        constexpr inline
-        p_i_utils::array_ref<typename V::U, p_Element_Types<size>::length>
-        uarray() noexcept {
-            return value.data.data;
         }
 
         template<typename T>
@@ -2463,7 +2426,7 @@ namespace JIO {
         friend struct p_pow2_Integer_Impl;
 
         template<size_t size2, bool sig2>
-        friend class p_array_Integer_Impl;
+        friend struct p_array_Integer_Impl;
     };
 
     namespace p_i_print {
