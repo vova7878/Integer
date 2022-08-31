@@ -26,7 +26,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <cstddef>
-#include <iostream>
+#include <ostream>
 
 // -std=c++14
 namespace JIO {
