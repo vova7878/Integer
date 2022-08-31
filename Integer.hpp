@@ -371,26 +371,56 @@ namespace JIO {
             return false;
         }
 
-        constexpr inline static bool
-        add_overflow(const I &v1, const I &v2, I &out) noexcept {
-            U tmp = v1.value + v2.value;
-            out = I(tmp);
-            return tmp < v1.value;
+        constexpr inline static bool increment_overflow(I &value) noexcept {
+            return !(++value.value);
         }
 
-        constexpr inline static bool increment_overflow(I &value) noexcept {
-            return (++value.value) == 0;
+        constexpr inline static bool decrement_overflow(I &value) noexcept {
+            return !(value.value--);
+        }
+
+        constexpr inline static bool
+        increment_overflow_carry(I &value, bool cf) noexcept {
+            return (value.value += 1 + cf) <= cf;
+        }
+
+        constexpr inline static bool
+        decrement_overflow_carry(I &value, bool cf) noexcept {
+            bool tmp = value.value <= cf;
+            value.value -= 1 + cf;
+            return tmp;
+        }
+
+        constexpr inline static bool
+        add_overflow(const I &v1, const I &v2, I &out) noexcept {
+            return (out.value = v1.value + v2.value) < v1.value;
         }
 
         constexpr inline static bool
         sub_overflow(const I &v1, const I &v2, I &out) noexcept {
-            U tmp = v1.value - v2.value;
-            out = I(tmp);
-            return tmp > v1.value;
+            return (out.value = v1.value - v2.value) > v1.value;
         }
 
-        constexpr inline static bool decrement_overflow(I &value) noexcept {
-            return (value.value--) == 0;
+        constexpr inline static bool
+        add_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            bool tmp = add_overflow(v1, v2, out);
+            return add_overflow(I(out), I(cf), out) | tmp;
+        }
+
+        constexpr inline static bool
+        sub_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            bool tmp = sub_overflow(v1, v2, out);
+            return sub_overflow(I(out), I(cf), out) | tmp;
+        }
+
+        constexpr inline static bool
+        add_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return add_overflow(v1.value, I(cf), out);
+        }
+
+        constexpr inline static bool
+        sub_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return sub_overflow(v1.value, I(cf), out);
         }
 
         constexpr inline I operator/(const I &other) const noexcept {
@@ -612,13 +642,37 @@ namespace JIO {
             T::value = v ? (T::value | mask1) : (T::value & mask2);
         }
 
+        constexpr inline static bool increment_overflow(I &value) noexcept {
+            return T::increment_overflow(value);
+        }
+
+        constexpr inline static bool decrement_overflow(I &value) noexcept {
+            return T::decrement_overflow(value);
+        }
+
+        constexpr inline static bool
+        increment_overflow_carry(I &value, bool cf) noexcept {
+            return T::increment_overflow_carry(value, cf);
+        }
+
+        constexpr inline static bool
+        decrement_overflow_carry(I &value, bool cf) noexcept {
+            return T::decrement_overflow_carry(value, cf);
+        }
+
+        constexpr inline static void
+        increment_carry(I &value, bool cf) noexcept {
+            value.value += 1 + cf;
+        }
+
+        constexpr inline static void
+        decrement_carry(I &value, bool cf) noexcept {
+            value.value -= 1 + cf;
+        }
+
         constexpr inline static bool
         add_overflow(const I &v1, const I &v2, I &out) noexcept {
             return T::add_overflow(v1, v2, out);
-        }
-
-        constexpr inline static bool increment_overflow(I &value) noexcept {
-            return T::increment_overflow(value);
         }
 
         constexpr inline static bool
@@ -626,8 +680,44 @@ namespace JIO {
             return T::sub_overflow(v1, v2, out);
         }
 
-        constexpr inline static bool decrement_overflow(I &value) noexcept {
-            return T::decrement_overflow(value);
+        constexpr inline static bool
+        add_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            return T::add_overflow_carry(v1, v2, cf, out);
+        }
+
+        constexpr inline static bool
+        sub_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            return T::sub_overflow_carry(v1, v2, cf, out);
+        }
+
+        constexpr inline static bool
+        add_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return T::add_zero_overflow_carry(v1, cf, out);
+        }
+
+        constexpr inline static bool
+        sub_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return T::sub_zero_overflow_carry(v1, cf, out);
+        }
+
+        constexpr inline static void
+        add_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            out.value = v1.value + v2.value + cf;
+        }
+
+        constexpr inline static void
+        sub_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            out.value = v1.value - v2.value - cf;
+        }
+
+        constexpr inline static void
+        add_zero_carry(const I &v1, bool cf, I &out) noexcept {
+            out.value = v1.value + cf;
+        }
+
+        constexpr inline static void
+        sub_zero_carry(const I &v1, bool cf, I &out) noexcept {
+            out.value = v1.value - cf;
         }
 
         constexpr inline static bool
@@ -742,36 +832,64 @@ namespace JIO {
             return false;
         }
 
-        constexpr inline static bool
-        add_overflow(const I &v1, const I &v2, I &out) noexcept {
-            bool tmpo = U::add_overflow(v1.high, v2.high, out.high);
-            if (U::add_overflow(v1.low, v2.low, out.low)) {
-                return U::increment_overflow(out.high) || tmpo;
-            }
-            return tmpo;
+        constexpr inline static bool increment_overflow(I &value) noexcept {
+            return U::add_zero_overflow_carry(U(value.high),
+                    U::increment_overflow(value.low), value.high);
         }
 
-        constexpr inline static bool increment_overflow(I &value) noexcept {
-            if (U::increment_overflow(value.low)) {
-                return U::increment_overflow(value.high);
-            }
-            return false;
+        constexpr inline static bool decrement_overflow(I &value) noexcept {
+            return U::sub_zero_overflow_carry(U(value.high),
+                    U::decrement_overflow(value.low), value.high);
+        }
+
+        constexpr inline static bool
+        increment_overflow_carry(I &value, bool cf) noexcept {
+            return U::add_overflow_carry(U(value.high), U::ZERO(),
+                    U::increment_overflow_carry(value.low, cf), value.high);
+        }
+
+        constexpr inline static bool
+        decrement_overflow_carry(I &value, bool cf) noexcept {
+            return U::sub_overflow_carry(U(value.high), U::ZERO(),
+                    U::decrement_overflow_carry(value.low, cf), value.high);
+        }
+
+        constexpr inline static bool
+        add_overflow(const I &v1, const I &v2, I &out) noexcept {
+            return U::add_overflow_carry(v1.high, v2.high,
+                    U::add_overflow(v1.low, v2.low, out.low), out.high);
         }
 
         constexpr inline static bool
         sub_overflow(const I &v1, const I &v2, I &out) noexcept {
-            bool tmpo = U::sub_overflow(v1.high, v2.high, out.high);
-            if (U::sub_overflow(v1.low, v2.low, out.low)) {
-                return U::decrement_overflow(out.high) || tmpo;
-            }
-            return tmpo;
+            return U::sub_overflow_carry(v1.high, v2.high,
+                    U::sub_overflow(v1.low, v2.low, out.low), out.high);
         }
 
-        constexpr inline static bool decrement_overflow(I &value) noexcept {
-            if (U::decrement_overflow(value.low)) {
-                return U::decrement_overflow(value.high);
-            }
-            return false;
+        constexpr inline static bool
+        add_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            return U::add_overflow_carry(v1.high, v2.high,
+                    U::add_overflow_carry(v1.low, v2.low, cf, out.low),
+                    out.high);
+        }
+
+        constexpr inline static bool
+        sub_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            return U::sub_overflow_carry(v1.high, v2.high,
+                    U::sub_overflow_carry(v1.low, v2.low, cf, out.low),
+                    out.high);
+        }
+
+        constexpr inline static bool
+        add_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return U::add_zero_overflow_carry(v1.high,
+                    U::add_zero_overflow_carry(v1.low, cf, out.low), out.high);
+        }
+
+        constexpr inline static bool
+        sub_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return U::sub_zero_overflow_carry(v1.high,
+                    U::sub_zero_overflow_carry(v1.low, cf, out.low), out.high);
         }
 
         constexpr inline bool operator>(const I &other) const noexcept {
@@ -934,17 +1052,15 @@ namespace JIO {
 
         constexpr inline I addOne() const noexcept {
             I tmp = *this;
-            if (U::increment_overflow(tmp.low)) {
-                ++tmp.high;
-            }
+            U::add_zero_carry(U(tmp.high),
+                    U::increment_overflow(tmp.low), tmp.high);
             return tmp;
         }
 
         constexpr inline I subOne() const noexcept {
             I tmp = *this;
-            if (U::decrement_overflow(tmp.low)) {
-                --tmp.high;
-            }
+            U::sub_zero_carry(U(tmp.high),
+                    U::decrement_overflow(tmp.low), tmp.high);
             return tmp;
         }
 
@@ -988,22 +1104,90 @@ namespace JIO {
             T::high.template setBit < index - half * 8 > (v);
         }
 
-        constexpr inline static bool add_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
-            return T::add_overflow(v1, v2, out);
-        }
-
         constexpr inline static bool increment_overflow(I &value) noexcept {
             return T::increment_overflow(value);
         }
 
-        constexpr inline static bool sub_overflow(
-                const I &v1, const I &v2, I &out) noexcept {
+        constexpr inline static bool decrement_overflow(I &value) noexcept {
+            return T::decrement_overflow(value);
+        }
+
+        constexpr inline static bool
+        increment_overflow_carry(I &value, bool cf) noexcept {
+            return T::increment_overflow_carry(value, cf);
+        }
+
+        constexpr inline static bool
+        decrement_overflow_carry(I &value, bool cf) noexcept {
+            return T::decrement_overflow_carry(value, cf);
+        }
+
+        constexpr inline static void
+        increment_carry(I &value, bool cf) noexcept {
+            U::add_zero_carry(U(value.high),
+                    U::increment_overflow_carry(value.low, cf), value.high);
+        }
+
+        constexpr inline static void
+        decrement_carry(I &value, bool cf) noexcept {
+            U::sub_zero_carry(U(value.high),
+                    U::decrement_overflow_carry(value.low, cf), value.high);
+        }
+
+        constexpr inline static bool
+        add_overflow(const I &v1, const I &v2, I &out) noexcept {
+            return T::add_overflow(v1, v2, out);
+        }
+
+        constexpr inline static bool
+        sub_overflow(const I &v1, const I &v2, I &out) noexcept {
             return T::sub_overflow(v1, v2, out);
         }
 
-        constexpr inline static bool decrement_overflow(I &value) noexcept {
-            return T::decrement_overflow(value);
+        constexpr inline static bool
+        add_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            return T::add_overflow_carry(v1, v2, cf, out);
+        }
+
+        constexpr inline static bool
+        sub_overflow_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            return T::sub_overflow_carry(v1, v2, cf, out);
+        }
+
+        constexpr inline static bool
+        add_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return T::add_zero_overflow_carry(v1, cf, out);
+        }
+
+        constexpr inline static bool
+        sub_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
+            return T::sub_zero_overflow_carry(v1, cf, out);
+        }
+
+        constexpr inline static void
+        add_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            U::add_carry(v1.high, v2.high,
+                    U::add_overflow_carry(v1.low, v2.low, cf, out.low),
+                    out.high);
+        }
+
+        constexpr inline static void
+        sub_carry(const I &v1, const I &v2, bool cf, I &out) noexcept {
+            U::sub_carry(v1.high, v2.high,
+                    U::sub_overflow_carry(v1.low, v2.low, cf, out.low),
+                    out.high);
+        }
+
+        constexpr inline static void
+        add_zero_carry(const I &v1, bool cf, I &out) noexcept {
+            U::add_zero_carry(v1.high,
+                    U::add_zero_overflow_carry(v1.low, cf, out.low), out.high);
+        }
+
+        constexpr inline static void
+        sub_zero_carry(const I &v1, bool cf, I &out) noexcept {
+            U::sub_zero_carry(v1.high,
+                    U::sub_zero_overflow_carry(v1.low, cf, out.low), out.high);
         }
 
         constexpr inline static bool
@@ -1047,21 +1231,17 @@ namespace JIO {
         }
 
         constexpr inline I operator+(const I &other) const noexcept {
-            U tmph = T::high + other.high;
-            U tmpl = U::ZERO();
-            if (U::add_overflow(T::low, other.low, tmpl)) {
-                ++tmph;
-            }
-            return I(tmpl, tmph);
+            I tmp = I::ZERO();
+            U::add_carry(T::high, other.high,
+                    U::add_overflow(T::low, other.low, tmp.low), tmp.high);
+            return tmp;
         }
 
         constexpr inline I operator-(const I &other) const noexcept {
-            U tmph = T::high - other.high;
-            U tmpl = U::ZERO();
-            if (U::sub_overflow(T::low, other.low, tmpl)) {
-                --tmph;
-            }
-            return I(tmpl, tmph);
+            I tmp = I::ZERO();
+            U::sub_carry(T::high, other.high,
+                    U::sub_overflow(T::low, other.low, tmp.low), tmp.high);
+            return tmp;
         }
 
         constexpr inline I operator*(const I &other) const noexcept {
@@ -2091,13 +2271,37 @@ namespace JIO {
             return *this;
         }
 
+        constexpr inline static bool increment_overflow(Integer &value) noexcept {
+            return V::increment_overflow(value.value);
+        }
+
+        constexpr inline static bool decrement_overflow(Integer &value) noexcept {
+            return V::decrement_overflow(value.value);
+        }
+
+        constexpr inline static bool
+        increment_overflow_carry(Integer &value, bool cf) noexcept {
+            return V::increment_overflow_carry(value.value, cf);
+        }
+
+        constexpr inline static bool
+        decrement_overflow_carry(Integer &value, bool cf) noexcept {
+            return V::decrement_overflow_carry(value.value, cf);
+        }
+
+        constexpr inline static void
+        increment_carry(Integer &value, bool cf) noexcept {
+            V::increment_carry(value.value, cf);
+        }
+
+        constexpr inline static void
+        decrement_carry(Integer &value, bool cf) noexcept {
+            V::decrement_carry(value.value, cf);
+        }
+
         constexpr inline static bool add_overflow(
                 const Integer &v1, const Integer &v2, Integer &out) noexcept {
             return V::add_overflow(v1.value, v2.value, out.value);
-        }
-
-        constexpr inline static bool increment_overflow(Integer &value) noexcept {
-            return V::increment_overflow(value.value);
         }
 
         constexpr inline static bool sub_overflow(
@@ -2105,8 +2309,44 @@ namespace JIO {
             return V::sub_overflow(v1.value, v2.value, out.value);
         }
 
-        constexpr inline static bool decrement_overflow(Integer &value) noexcept {
-            return V::decrement_overflow(value.value);
+        constexpr inline static bool add_overflow_carry(const Integer &v1,
+                const Integer &v2, bool cf, Integer &out) noexcept {
+            return V::add_overflow_carry(v1.value, v2.value, cf, out.value);
+        }
+
+        constexpr inline static bool sub_overflow_carry(const Integer &v1,
+                const Integer &v2, bool cf, Integer &out) noexcept {
+            return V::sub_overflow_carry(v1.value, v2.value, cf, out.value);
+        }
+
+        constexpr inline static bool add_zero_overflow_carry(const Integer &v1,
+                bool cf, Integer &out) noexcept {
+            return V::add_zero_overflow_carry(v1.value, cf, out.value);
+        }
+
+        constexpr inline static bool sub_zero_overflow_carry(const Integer &v1,
+                bool cf, Integer &out) noexcept {
+            return V::sub_zero_overflow_carry(v1.value, cf, out.value);
+        }
+
+        constexpr inline static void add_carry(const Integer &v1,
+                const Integer &v2, bool cf, Integer &out) noexcept {
+            V::add_carry(v1.value, v2.value, cf, out.value);
+        }
+
+        constexpr inline static void sub_carry(const Integer &v1,
+                const Integer &v2, bool cf, Integer &out) noexcept {
+            V::sub_carry(v1.value, v2.value, cf, out.value);
+        }
+
+        constexpr inline static void add_zero_carry(const Integer &v1,
+                bool cf, Integer &out) noexcept {
+            V::add_zero_carry(v1.value, cf, out.value);
+        }
+
+        constexpr inline static void sub_zero_carry(const Integer &v1,
+                bool cf, Integer &out) noexcept {
+            V::sub_zero_carry(v1.value, cf, out.value);
         }
 
         constexpr inline static bool
