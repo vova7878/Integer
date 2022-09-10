@@ -412,12 +412,12 @@ namespace JIO {
 
         constexpr inline static bool
         add_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
-            return add_overflow(v1.value, I(cf), out);
+            return add_overflow(v1, I(cf), out);
         }
 
         constexpr inline static bool
         sub_zero_overflow_carry(const I &v1, bool cf, I &out) noexcept {
-            return sub_overflow(v1.value, I(cf), out);
+            return sub_overflow(v1, I(cf), out);
         }
 
         constexpr inline I operator/(const I &other) const noexcept {
