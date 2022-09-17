@@ -1336,7 +1336,7 @@ namespace JIO {
         typedef p_array_Integer_Base I;
         typedef p_SHType<size> M;
         constexpr static M shdivider = size * 8;
-        constexpr static size_t length = ET::length; //size / sizeof (U);
+        constexpr static size_t length = ET::length;
 
         template<typename Tp, Tp... values>
         using A = p_i_seq::array_t<Tp, values...>;
@@ -1381,7 +1381,7 @@ namespace JIO {
         typedef p_array_Integer_Base I;
         typedef p_SHType<size> M;
         constexpr static M shdivider = size * 8;
-        constexpr static size_t length = ET::length; //size / sizeof (U);
+        constexpr static size_t length = ET::length;
 
         template<typename Tp, Tp... values>
         using A = p_i_seq::array_t<Tp, values...>;
