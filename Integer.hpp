@@ -75,15 +75,15 @@ namespace JIO {
             }
         };
 
-        struct any {
-            constexpr inline any() noexcept = default;
+        struct unused {
+            constexpr inline unused() noexcept = default;
 
             template<typename T>
-            constexpr inline any(T) noexcept { }
+            constexpr inline unused(T) noexcept { }
         };
 
         template <size_t length>
-        constexpr inline void unused_array(v_array_t<any, length>) noexcept { }
+        constexpr inline void unused_array(v_array_t<unused, length>) noexcept { }
 
         template<typename T, T... v1, T... v2>
         constexpr inline array_t<T, v1..., v2...>
@@ -120,7 +120,7 @@ namespace JIO {
         template<size_t... i1>
         struct p_wrapper {
             template<size_t>
-            using any_h = any;
+            using any_h = unused;
 
             template<size_t... i2, typename T>
             constexpr inline static T
@@ -144,6 +144,26 @@ namespace JIO {
         template<typename... Tp>
         constexpr inline auto last_element(Tp... arr) noexcept {
             return element<sizeof...(arr) - 1 > (arr...);
+        }
+
+        template<typename T, size_t length, size_t... index>
+        constexpr inline static bool
+        any(const v_array_t<T, length> &v, array_t<size_t, index...>) noexcept {
+            bool out = false;
+            p_i_seq::unused_array<sizeof...(index)>({
+                (out |= !!v[index])...
+            });
+            return out;
+        }
+
+        template<typename T, size_t length, size_t... index>
+        constexpr inline static bool
+        all(const v_array_t<T, length> &v, array_t<size_t, index...>) noexcept {
+            bool out = true;
+            p_i_seq::unused_array<sizeof...(index)>({
+                (out &= !!v[index])...
+            });
+            return out;
         }
     }
 
