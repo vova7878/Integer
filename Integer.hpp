@@ -1607,18 +1607,10 @@ namespace JIO {
         bool cdo = U1::add_overflow(c, d, cd);
         U2 abcd_low = wmultiply(ab, cd);
         unsigned int abcd_high = abo && cdo;
-        if (abo && U2::add_overflow(U2(abcd_low), U2(cd) << (size * 4), abcd_low)) {
-            ++abcd_high;
-        }
-        if (cdo && U2::add_overflow(U2(abcd_low), U2(ab) << (size * 4), abcd_low)) {
-            ++abcd_high;
-        }
-        if (U2::sub_overflow(U2(abcd_low), ac, abcd_low)) {
-            --abcd_high;
-        }
-        if (U2::sub_overflow(U2(abcd_low), bd, abcd_low)) {
-            --abcd_high;
-        }
+        abcd_high += abo && U2::add_overflow(U2(abcd_low), U2(cd) << (size * 4), abcd_low);
+        abcd_high += cdo && U2::add_overflow(U2(abcd_low), U2(ab) << (size * 4), abcd_low);
+        abcd_high -= U2::sub_overflow(U2(abcd_low), ac, abcd_low);
+        abcd_high -= U2::sub_overflow(U2(abcd_low), bd, abcd_low);
         U4 abcd = U4(abcd_low, U2(abcd_high));
 #else
         U2 ad = wmultiply(a, d);
