@@ -1365,7 +1365,7 @@ namespace JIO {
         AT<length> data;
 
         constexpr explicit inline
-        p_array_Integer_Base(AT<length> arr) noexcept : data(arr) { }
+        p_array_Integer_Base(const AT<length> &arr) noexcept : data(arr) { }
 
         constexpr inline p_array_Integer_Base() noexcept = default;
 
@@ -1375,20 +1375,20 @@ namespace JIO {
 
         template<size_t a_len>
         constexpr inline static U
-        value_for_index(AT<a_len> arr, size_t index, U fill) noexcept {
-            return index < a_len ? arr[index] : fill;
+        value_for_index(const AT<a_len> &arr, size_t index, U filler) noexcept {
+            return index < a_len ? arr[index] : filler;
         }
 
         template<size_t a_len, size_t... index>
         constexpr inline static AT<length>
-        set_h(AT< a_len> arr, A<size_t, index...>, U fill) noexcept {
-            return {value_for_index(arr, index, fill)...};
+        fill_array(const AT< a_len> &arr, A<size_t, index...>, U filler) noexcept {
+            return {value_for_index(arr, index, filler)...};
         }
 
         template<typename... Tp>
         constexpr explicit inline
         p_array_Integer_Base(Tp... arr) noexcept :
-        data(set_h(AT<sizeof...(Tp)>{U(arr)...},
+        data(fill_array(AT<sizeof...(Tp)>{U(arr)...},
         p_i_seq::make_array<size_t, 0, length>(),
                 (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
     };
@@ -1410,7 +1410,7 @@ namespace JIO {
         AT<length> data;
 
         constexpr explicit inline
-        p_array_Integer_Base(AT<length> arr) noexcept : data(arr) { }
+        p_array_Integer_Base(const AT<length> &arr) noexcept : data(arr) { }
 
         constexpr inline p_array_Integer_Base() noexcept = default;
 
@@ -1420,20 +1420,20 @@ namespace JIO {
 
         template<size_t a_len>
         constexpr inline static U
-        value_for_index(AT<a_len> arr, size_t index, U fill) noexcept {
-            return index < a_len ? arr[index] : fill;
+        value_for_index(const AT<a_len> &arr, size_t index, U filler) noexcept {
+            return index < a_len ? arr[index] : filler;
         }
 
         template<size_t a_len, size_t... index>
         constexpr inline static AT<length>
-        set_h(AT< a_len> arr, A<size_t, index...>, U fill) noexcept {
-            return {value_for_index(arr, index, fill)...};
+        fill_array(const AT< a_len> &arr, A<size_t, index...>, U filler) noexcept {
+            return {value_for_index(arr, index, filler)...};
         }
 
         template<typename... Tp>
         constexpr explicit inline
         p_array_Integer_Base(Tp... arr) noexcept :
-        data(set_h(AT<sizeof...(Tp)>{U(arr)...},
+        data(fill_array(AT<sizeof...(Tp)>{U(arr)...},
         p_i_seq::make_array<size_t, 0, length>(),
                 (p_i_seq::last_element(arr...) < 0) ? ~U(0) : U(0))) { }
     };
@@ -1526,18 +1526,8 @@ namespace JIO {
             return I(AT<T::length>{});
         }
 
-        template<size_t... index>
-        constexpr inline static bool
-        isZero_h(const I &v, A<size_t, index...>) noexcept {
-            bool out = true;
-            p_i_seq::unused_array<bool, sizeof...(index)>({
-                (out &= (v.data[index] == 0))...
-            });
-            return out;
-        }
-
         constexpr inline bool isZero() const noexcept {
-            return isZero_h(*this, p_i_seq::make_array<size_t, 0, T::length>());
+            return !p_i_seq::any(this->data, p_i_seq::make_array<size_t, 0, T::length>());
         }
 
         constexpr inline bool upperBit() const noexcept {
@@ -2052,13 +2042,13 @@ namespace JIO {
     public:
 
         constexpr inline
-        p_i_utils::array_ref<const typename V::U, p_Element_Types<size>::length>
+        p_i_utils::array_ref<const typename V::U, V::length>
         uarray() const noexcept {
             return value.data.data;
         }
 
         constexpr inline
-        p_i_utils::array_ref<typename V::U, p_Element_Types<size>::length>
+        p_i_utils::array_ref<typename V::U, V::length>
         uarray() noexcept {
             return value.data.data;
         }
