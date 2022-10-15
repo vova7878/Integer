@@ -1330,33 +1330,24 @@ namespace JIO {
         }
     };
 
-    template<typename T1, typename T2>
-    struct p_compare_types {
-        constexpr static bool value = false;
-    };
-
-    template<typename T>
-    struct p_compare_types <T, T> {
-        constexpr static bool value = true;
-    };
-
-    template<typename T1, typename T2>
-    constexpr inline bool p_compare_types_cv() noexcept {
-        return p_compare_types<typename std::remove_cv<T1>::type,
-                typename std::remove_cv<T2>::type>::value;
-    }
-
-    template<typename T>
-    constexpr inline bool p_is_integral_no_bool() noexcept {
-        return std::is_integral<T>::value && (!p_compare_types_cv<T, bool>());
-    }
-
     namespace ct {
-        template<typename R, typename T, bool V = true >
-        using if_int_t = if_t<R, p_is_integral_no_bool<T>() && V>;
+
+        template<typename T1, typename T2>
+        constexpr inline bool is_same_cv() noexcept {
+            return std::is_same<typename std::remove_cv<T1>::type,
+                    typename std::remove_cv<T2>::type>::value;
+        }
+
+        template<typename T>
+        constexpr inline bool is_integral_no_bool() noexcept {
+            return std::is_integral<T>::value && (!is_same_cv<T, bool>());
+        }
 
         template<typename R, typename T, bool V = true >
-        using if_bool_t = if_t<R, p_compare_types_cv<T, bool>() && V>;
+        using if_int_t = if_t<R, is_integral_no_bool<T>() && V>;
+
+        template<typename R, typename T, bool V = true >
+        using if_bool_t = if_t<R, is_same_cv<T, bool>() && V>;
     }
 
     template<typename T>
