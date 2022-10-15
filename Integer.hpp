@@ -1467,7 +1467,7 @@ namespace JIO {
     };
 
     template<size_t size, bool sig>
-    struct p_array_Integer_Impl : p_array_Integer_Base<size, sig> {
+    struct p_array_Integer_Impl : public p_array_Integer_Base<size, sig> {
         typedef p_array_Integer_Base<size, sig> T;
         typedef p_array_Integer_Impl<size, sig> I;
         typedef p_array_Integer_Impl<size, false> UI;
@@ -1510,33 +1510,33 @@ namespace JIO {
             });
         }
 
-        template<size_t size2, bool sig2, p_enable_if(size2 > size)>
-        constexpr inline static I
+        template<size_t size2, bool sig2>
+        constexpr inline static ct::if_t<I, (size2 > size) >
         downcast_from(const Integer<size2, sig2> &value) noexcept {
             I out = I::ZERO();
             copy_from(out, value, p_i_seq::make_array<size_t, 0, size>());
             return out;
         }
 
-        template<size_t size2, bool sig2,
-        typename R = Integer<size2, sig2>, p_enable_if(size2 < size)>
-        constexpr inline static R downcast_to(const I &value) noexcept {
+        template<size_t size2, bool sig2, typename R = Integer<size2, sig2>>
+        constexpr inline static ct::if_t<R, (size2 < size) >
+        downcast_to(const I &value) noexcept {
             R out = R::ZERO();
             copy_to(out, value, p_i_seq::make_array<size_t, 0, size2>());
             return out;
         }
 
-        template<size_t size2, bool sig2, p_enable_if(size2 < size)>
-        constexpr inline static I
+        template<size_t size2, bool sig2>
+        constexpr inline static ct::if_t<I, (size2 < size) >
         upcast_from(const Integer<size2, sig2> &value) noexcept {
             I out = value.isNegative() ? ~I::ZERO() : I::ZERO();
             copy_from(out, value, p_i_seq::make_array<size_t, 0, size2>());
             return out;
         }
 
-        template<size_t size2, bool sig2,
-        typename R = Integer<size2, sig2>, p_enable_if(size2 > size)>
-        constexpr inline static R upcast_to(const I &value) noexcept {
+        template<size_t size2, bool sig2, typename R = Integer<size2, sig2>>
+        constexpr inline static ct::if_t<R, (size2 > size) >
+        upcast_to(const I &value) noexcept {
             R out = value.isNegative() ? ~R::ZERO() : R::ZERO();
             copy_to(out, value, p_i_seq::make_array<size_t, 0, size>());
             return out;
@@ -1555,7 +1555,7 @@ namespace JIO {
         }
 
         constexpr inline bool isZero() const noexcept {
-            return !p_i_seq::any(this->data, p_i_seq::make_array<size_t, 0, T::length>());
+            return !p_i_seq::any(this->data);
         }
 
         constexpr inline bool upperBit() const noexcept {
@@ -1587,27 +1587,31 @@ namespace JIO {
         }
 
         template<size_t index, size_t arr_index = index / sizeof (U),
-        size_t n = index % sizeof (U), p_enable_if(index < size)>
-        constexpr inline uint8_t getByte() const noexcept {
+        size_t n = index % sizeof (U)>
+        constexpr inline ct::if_t<uint8_t, (index < size) >
+        getByte() const noexcept {
             return T::data[arr_index].template getByte<n>();
         }
 
         template<size_t index, size_t arr_index = index / sizeof (U),
-        size_t n = index % sizeof (U), p_enable_if(index < size)>
-        constexpr inline I& setByte(uint8_t v) noexcept {
+        size_t n = index % sizeof (U)>
+        constexpr inline ct::if_t<I&, (index < size) >
+        setByte(uint8_t v) noexcept {
             T::data[arr_index].template setByte<n>(v);
             return *this;
         }
 
         template<size_t index, size_t arr_index = index / (sizeof (U) * 8),
-        size_t n = index % (sizeof (U) * 8), p_enable_if(index < size * 8)>
-        constexpr inline bool getBit() const noexcept {
+        size_t n = index % (sizeof (U) * 8)>
+        constexpr inline ct::if_t<bool, (index < size * 8) >
+        getBit() const noexcept {
             return T::data[arr_index].template getBit<n>();
         }
 
         template<size_t index, size_t arr_index = index / (sizeof (U) * 8),
-        size_t n = index % (sizeof (U) * 8), p_enable_if(index < size * 8)>
-        constexpr inline void setBit(bool v) noexcept {
+        size_t n = index % (sizeof (U) * 8)>
+        constexpr inline ct::if_t<void, (index < size * 8) >
+        setBit(bool v) noexcept {
             T::data[arr_index].template setBit<n>(v);
         }
 
