@@ -212,90 +212,6 @@ namespace JIO {
             return indexOfDigit<c, index + 1 > ();
         }
 
-        constexpr inline size_t numberOfLeadingZeros2Bit_n(uint8_t i) noexcept {
-            return i ? (1 - (i >> 1)) : 2;
-        }
-
-        constexpr inline size_t numberOfLeadingZeros4Bit_n(uint8_t i) noexcept {
-            return (i >= 1U << 2) ?
-                    numberOfLeadingZeros2Bit_n(i >> 2) :
-                    numberOfLeadingZeros2Bit_n(i) + 2;
-        }
-
-        constexpr inline size_t numberOfLeadingZeros_n(uint8_t i) noexcept {
-            return (i >= 1U << 4) ?
-                    numberOfLeadingZeros4Bit_n(i >> 4) :
-                    numberOfLeadingZeros4Bit_n(i) + 4;
-        }
-
-        constexpr inline size_t numberOfLeadingZeros_n(uint16_t i) noexcept {
-            return (i >= 1U << 8) ?
-                    numberOfLeadingZeros_n(uint8_t(i >> 8)) :
-                    numberOfLeadingZeros_n(uint8_t(i)) + 8;
-        }
-
-        constexpr inline size_t numberOfLeadingZeros_n(uint32_t i) noexcept {
-            return (i >= 1UL << 16) ?
-                    numberOfLeadingZeros_n(uint16_t(i >> 16)) :
-                    numberOfLeadingZeros_n(uint16_t(i)) + 16;
-        }
-
-        constexpr inline size_t numberOfLeadingZeros_n(uint64_t i) noexcept {
-            return (i >= 1ULL << 32) ?
-                    numberOfLeadingZeros_n(uint32_t(i >> 32)) :
-                    numberOfLeadingZeros_n(uint32_t(i)) + 32;
-        }
-
-        constexpr inline size_t numberOfTrailingZeros2Bit_n(uint8_t i) noexcept {
-            return i ? (1 - (i & 1)) : 2;
-        }
-
-        constexpr inline size_t numberOfTrailingZeros4Bit_n(uint8_t i) noexcept {
-            return (i & 0x3) ?
-                    numberOfTrailingZeros2Bit_n(i) :
-                    numberOfTrailingZeros2Bit_n(i >> 2) + 2;
-        }
-
-        constexpr inline size_t numberOfTrailingZeros_n(uint8_t i) noexcept {
-            return (i & 0xf) ?
-                    numberOfTrailingZeros4Bit_n(i) :
-                    numberOfTrailingZeros4Bit_n(i >> 4) + 4;
-        }
-
-        constexpr inline size_t numberOfTrailingZeros_n(uint16_t i) noexcept {
-            return (uint8_t(i)) ?
-                    numberOfTrailingZeros_n(uint8_t(i)) :
-                    numberOfTrailingZeros_n(uint8_t(i >> 8)) + 8;
-        }
-
-        constexpr inline size_t numberOfTrailingZeros_n(uint32_t i) noexcept {
-            return (uint16_t(i)) ?
-                    numberOfTrailingZeros_n(uint16_t(i)) :
-                    numberOfTrailingZeros_n(uint16_t(i >> 16)) + 16;
-        }
-
-        constexpr inline size_t numberOfTrailingZeros_n(uint64_t i) noexcept {
-            return (uint32_t(i)) ?
-                    numberOfTrailingZeros_n(uint32_t(i)) :
-                    numberOfTrailingZeros_n(uint32_t(i >> 32)) + 32;
-        }
-
-        template <typename T>
-        constexpr inline size_t logb2_n(const T value) noexcept {
-            return sizeof (T) * 8 - numberOfLeadingZeros_n(value);
-        }
-
-        constexpr inline size_t make_pow2(size_t i) noexcept {
-            if (i == 0) {
-                return 0;
-            }
-            size_t log = logb2_n(i);
-            if (i == (size_t(1) << (log - 1))) {
-                return i;
-            }
-            return 1 << log;
-        }
-
         template<size_t size, bool sig>
         struct native_int_type_h;
 
@@ -339,10 +255,95 @@ namespace JIO {
             typedef int64_t type;
         };
 
-        constexpr static size_t max_native_size = 8;
-
         template<size_t size, bool sig>
         using native_int_type = typename native_int_type_h<size, sig>::type;
+
+        constexpr static size_t max_native_size = 8;
+
+        constexpr inline int bitCount_h(uint64_t value) noexcept {
+            uint64_t tmp = value - ((value >> 1) & 0x5555555555555555);
+            tmp = ((tmp >> 2) & 0x3333333333333333) + (tmp & 0x3333333333333333);
+            return ((((tmp >> 4) + tmp) & 0xf0f0f0f0f0f0f0f) * 0x101010101010101) >> 56;
+        }
+
+        constexpr inline int bitCount_h(uint32_t value) noexcept {
+            uint tmp = value - ((value >> 1) & 0x55555555);
+            tmp = ((tmp >> 2) & 0x33333333) + (tmp & 0x33333333);
+            return ((((tmp >> 4) + tmp) & 0xf0f0f0f) * 0x1010101) >> 24;
+        }
+
+        constexpr inline int bitCount_h(uint16_t value) noexcept {
+            return bitCount_h(uint32_t(value));
+        }
+
+        constexpr inline int bitCount_h(uint8_t value) noexcept {
+            return bitCount_h(uint32_t(value));
+        }
+
+        template<typename T>
+        constexpr inline int bitCount_n(T value) noexcept {
+            return bitCount_h(native_int_type<sizeof (T), false > (value));
+        }
+
+        constexpr inline int logb2_h(uint64_t value) {
+            value |= (value >> 1);
+            value |= (value >> 2);
+            value |= (value >> 4);
+            value |= (value >> 8);
+            value |= (value >> 16);
+            value |= (value >> 32);
+            return bitCount_n(value);
+        }
+
+        constexpr inline int logb2_h(uint32_t value) noexcept {
+            value |= (value >> 1);
+            value |= (value >> 2);
+            value |= (value >> 4);
+            value |= (value >> 8);
+            value |= (value >> 16);
+            return bitCount_n(value);
+        }
+
+        constexpr inline int logb2_h(uint16_t value) noexcept {
+            value |= (value >> 1);
+            value |= (value >> 2);
+            value |= (value >> 4);
+            value |= (value >> 8);
+            return bitCount_n(value);
+        }
+
+        constexpr inline int logb2_h(uint8_t value) noexcept {
+            value |= (value >> 1);
+            value |= (value >> 2);
+            value |= (value >> 4);
+            return bitCount_n(value);
+        }
+
+        template<typename T>
+        constexpr inline int logb2_n(T value) noexcept {
+            return logb2_h(native_int_type<sizeof (T), false > (value));
+        }
+
+        template<typename T>
+        constexpr inline int numberOfLeadingZeros_n(T value) noexcept {
+            return sizeof (T) * 8 - logb2_n(value);
+        }
+
+        template<typename T>
+        constexpr inline int numberOfTrailingZeros_n(T value) noexcept {
+            return bitCount_n((value & -value) - 1);
+        }
+
+        constexpr inline size_t make_pow2(size_t i) noexcept {
+            if (i == 0) {
+                return 0;
+            }
+            size_t log = logb2_n(i);
+            if (i == (size_t(1) << (log - 1))) {
+                return i;
+            }
+            return 1 << log;
+        }
 
         template<typename T, size_t length>
         using array_ref = T(&)[length];
@@ -1252,17 +1253,15 @@ namespace JIO {
         }
 
         constexpr inline size_t numberOfLeadingZeros() const noexcept {
-            if (T::high.isZero()) {
-                return T::low.numberOfLeadingZeros() + half * 8;
-            }
-            return T::high.numberOfLeadingZeros();
+            size_t hz = T::high.isZero();
+            U tmp = hz ? T::low : T::high;
+            return tmp.numberOfLeadingZeros() + half * 8 * hz;
         }
 
         constexpr inline size_t numberOfTrailingZeros() const noexcept {
-            if (T::low.isZero()) {
-                return T::high.numberOfTrailingZeros() + half * 8;
-            }
-            return T::low.numberOfTrailingZeros();
+            size_t lz = T::low.isZero();
+            U tmp = lz ? T::high : T::low;
+            return tmp.numberOfTrailingZeros() + half * 8 * lz;
         }
 
         constexpr inline I operator+() const noexcept {
@@ -3245,7 +3244,7 @@ namespace JIO {
         template<bool sig, int bit_per_symbol, int first, int... nums>
         constexpr inline auto get_bytes() noexcept {
             return bits_to_bytes(sizeof...(nums) * bit_per_symbol +
-                    (4 - p_i_utils::numberOfLeadingZeros4Bit_n(first)), sig);
+                    (sizeof (first) * 8 - p_i_utils::numberOfLeadingZeros_n(first)), sig);
         }
 
         template<bool sig, int... nums,
