@@ -25,19 +25,18 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <initializer_list>
 #include <cstddef>
 #include <ostream>
 
 // -std=c++14
 namespace JIO {
 
-    template<bool A>
-    using p_enable_if_t = typename std::enable_if<A, bool>::type;
+    namespace ct {
 
-#define p_enable_if(B) p_enable_if_t<(B)> = false
-
-    template<typename T, bool v, p_enable_if(v)>
-    using p_cond_t = T;
+        template<typename R, bool v>
+        using if_t = typename std::enable_if<v, R>::type;
+    }
 
     template<typename T>
     constexpr inline T lowestOneBit(const T i) noexcept {
@@ -82,8 +81,7 @@ namespace JIO {
             constexpr inline unused(T) noexcept { }
         };
 
-        template <size_t length>
-        constexpr inline void unused_array(v_array_t<unused, length>) noexcept { }
+        constexpr inline void unused_array(std::initializer_list<unused>) noexcept { }
 
         template<typename T, T... v1, T... v2>
         constexpr inline array_t<T, v1..., v2...>
@@ -147,23 +145,45 @@ namespace JIO {
         }
 
         template<typename T, size_t length, size_t... index>
-        constexpr inline static bool
+        constexpr inline bool
         any(const v_array_t<T, length> &v, array_t<size_t, index...>) noexcept {
             bool out = false;
-            p_i_seq::unused_array<sizeof...(index)>({
+            p_i_seq::unused_array({
                 (out |= !!v[index])...
             });
             return out;
         }
 
+        template<typename T, size_t length>
+        constexpr inline bool
+        any(const v_array_t<T, length> &v) noexcept {
+            return any(v, make_array<size_t, 0, length>());
+        }
+
+        template<typename... Tp>
+        constexpr inline bool any(Tp... v) noexcept {
+            return any(v_array_t<bool, sizeof...(v)>{(!!v)...});
+        }
+
         template<typename T, size_t length, size_t... index>
-        constexpr inline static bool
+        constexpr inline bool
         all(const v_array_t<T, length> &v, array_t<size_t, index...>) noexcept {
             bool out = true;
-            p_i_seq::unused_array<sizeof...(index)>({
+            p_i_seq::unused_array({
                 (out &= !!v[index])...
             });
             return out;
+        }
+
+        template<typename T, size_t length>
+        constexpr inline bool
+        all(const v_array_t<T, length> &v) noexcept {
+            return all(v, make_array<size_t, 0, length>());
+        }
+
+        template<typename... Tp>
+        constexpr inline bool all(Tp... v) noexcept {
+            return all(v_array_t<bool, sizeof...(v)>{(!!v)...});
         }
     }
 
@@ -180,13 +200,15 @@ namespace JIO {
             'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
         };
 
-        template<char c, size_t index = 0, p_enable_if(digits[index] == c)>
-        constexpr inline auto indexOfDigit() noexcept {
+        template<char c, size_t index = 0 >
+        constexpr inline ct::if_t<size_t, digits[index] == c>
+        indexOfDigit() noexcept {
             return index < 36 ? index : index - 26;
         }
 
-        template<char c, size_t index = 0, p_enable_if(digits[index] != c)>
-        constexpr inline auto indexOfDigit() noexcept {
+        template<char c, size_t index = 0 >
+        constexpr inline ct::if_t<size_t, digits[index] != c>
+        indexOfDigit() noexcept {
             return indexOfDigit<c, index + 1 > ();
         }
 
@@ -333,7 +355,7 @@ namespace JIO {
         array
     };
 
-    constexpr p_IType p_getIntegerType(size_t size) noexcept {
+    constexpr p_IType p_intType(size_t size) noexcept {
         if (!size) {
             return illegal;
         }
@@ -359,7 +381,7 @@ namespace JIO {
     template<size_t size, bool sig>
     class Integer;
 
-    template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
+    template<size_t size, bool sig, p_IType = p_intType(size)>
     struct p_Integer_Impl;
 
     template<size_t size, bool sig>
@@ -639,26 +661,27 @@ namespace JIO {
             return I(T::value - 1);
         }
 
-        template<size_t index, p_enable_if(index < size)>
-        constexpr inline uint8_t getByte() const noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<uint8_t, (index < size) >
+        getByte() const noexcept {
             return T::value >> (index * 8);
         }
 
-        template<size_t index, U mask = U(~(U(0xffU) << (index * 8))),
-        p_enable_if(index < size)>
-        constexpr inline void setByte(uint8_t v) noexcept {
+        template<size_t index, U mask = U(~(U(0xffU) << (index * 8)))>
+        constexpr inline ct::if_t<void, (index < size) >
+        setByte(uint8_t v) noexcept {
             T::value = (T::value & mask) | (U(v) << index * 8);
         }
 
-        template<size_t index, U mask = U(U(1) << index),
-        p_enable_if(index < size * 8)>
-        constexpr inline bool getBit() const noexcept {
+        template<size_t index, U mask = U(U(1) << index)>
+        constexpr inline ct::if_t<bool, (index < size * 8) >
+        getBit() const noexcept {
             return T::value & mask;
         }
 
-        template<size_t index, U mask1 = U(U(1) << index),
-        U mask2 = U(~mask1), p_enable_if(index < size * 8)>
-        constexpr inline void setBit(bool v) noexcept {
+        template<size_t index, U mask1 = U(U(1) << index), U mask2 = U(~mask1)>
+        constexpr inline ct::if_t<void, (index < size * 8) >
+        setBit(bool v) noexcept {
             T::value = v ? (T::value | mask1) : (T::value & mask2);
         }
 
@@ -1084,43 +1107,55 @@ namespace JIO {
             return tmp;
         }
 
-        template<size_t index, p_enable_if(index < half)>
-        constexpr inline uint8_t getByte() const noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<uint8_t, (index < half) >
+        getByte() const noexcept {
             return T::low.template getByte<index>();
         }
 
-        template<size_t index, p_enable_if((index >= half) && (index < half * 2))>
-        constexpr inline uint8_t getByte() const noexcept {
+        template<size_t index>
+        constexpr inline
+        ct::if_t<uint8_t, (index >= half) && (index < half * 2) >
+        getByte() const noexcept {
             return T::high.template getByte < index - half > ();
         }
 
-        template<size_t index, p_enable_if(index < half)>
-        constexpr inline void setByte(uint8_t v) noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<void, (index < half) >
+        setByte(uint8_t v) noexcept {
             T::low.template setByte<index>(v);
         }
 
-        template<size_t index, p_enable_if((index >= half) && (index < half * 2))>
-        constexpr inline void setByte(uint8_t v) noexcept {
+        template<size_t index>
+        constexpr inline
+        ct::if_t<void, (index >= half) && (index < half * 2) >
+        setByte(uint8_t v) noexcept {
             T::high.template setByte < index - half > (v);
         }
 
-        template<size_t index, p_enable_if(index < half * 8)>
-        constexpr inline bool getBit() const noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<bool, (index < half * 8) >
+        getBit() const noexcept {
             return T::low.template getBit<index>();
         }
 
-        template<size_t index, p_enable_if((index >= half * 8) && (index < half * 16))>
-        constexpr inline bool getBit() const noexcept {
+        template<size_t index>
+        constexpr inline
+        ct::if_t<bool, (index >= half * 8)&& (index < half * 16) >
+        getBit() const noexcept {
             return T::high.template getBit < index - half * 8 > ();
         }
 
-        template<size_t index, p_enable_if(index < half * 8)>
-        constexpr inline void setBit(bool v) noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<void, (index < half * 8) >
+        setBit(bool v) noexcept {
             T::low.template setBit<index>(v);
         }
 
-        template<size_t index, p_enable_if((index >= half * 8) && (index < half * 16))>
-        constexpr inline void setBit(bool v) noexcept {
+        template<size_t index>
+        constexpr inline
+        ct::if_t<void, (index >= half * 8) && (index < half * 16) >
+        setBit(bool v) noexcept {
             T::high.template setBit < index - half * 8 > (v);
         }
 
@@ -1319,11 +1354,13 @@ namespace JIO {
         return std::is_integral<T>::value && (!p_compare_types_cv<T, bool>());
     }
 
-    template<typename T>
-    using p_int_t = p_cond_t<T, p_is_integral_no_bool<T>()>;
+    namespace ct {
+        template<typename R, typename T, bool V = true >
+        using if_int_t = if_t<R, p_is_integral_no_bool<T>() && V>;
 
-    template<typename T>
-    using p_bool_t = p_cond_t<T, p_compare_types_cv<T, bool>()>;
+        template<typename R, typename T, bool V = true >
+        using if_bool_t = if_t<R, p_compare_types_cv<T, bool>() && V>;
+    }
 
     template<typename T>
     constexpr inline bool p_is_signed() noexcept {
@@ -1647,24 +1684,22 @@ namespace JIO {
         }
     };
 
-    template<typename U, typename S, bool sig, typename V, p_enable_if(sig)>
-    constexpr inline S p_castUS(V value) noexcept {
-        return S(value);
-    }
+    template<typename U, typename S, bool sig>
+    struct p_US {
+        typedef U type;
+    };
 
-    template<typename U, typename S, bool sig, typename V, p_enable_if(!sig)>
-    constexpr inline U p_castUS(V value) noexcept {
-        return U(value);
-    }
+    template<typename U, typename S>
+    struct p_US <U, S, true> {
+        typedef S type;
+    };
 
-    template<typename T, bool sig, p_enable_if(sig)>
+    template<typename U, typename S, bool sig>
+    using p_US_t = typename p_US<U, S, sig>::type;
+
+    template<typename T, bool sig>
     constexpr inline T p_min_value() noexcept {
-        return T(1) << (sizeof (T) * 8 - 1);
-    }
-
-    template<typename T, bool sig, p_enable_if(!sig)>
-    constexpr inline T p_min_value() noexcept {
-        return T::ZERO();
+        return sig ? T(1) << (sizeof (T) * 8 - 1) : (T::ZERO());
     }
 
     template<typename T, bool sig>
@@ -1672,10 +1707,10 @@ namespace JIO {
         return ~p_min_value<T, sig>();
     }
 
-    template<size_t size, typename UI = Integer<size, false>,
-    p_enable_if(p_getIntegerType(size) == pow2)>
-    constexpr inline UI p_udivrem(const Integer<size, false> &a,
-            const Integer<size, false> &b, Integer<size, false> *rem) noexcept {
+    template<size_t size, typename UI = Integer<size, false> >
+    constexpr inline ct::if_t<UI, p_intType(size) == pow2>
+    p_udivrem(const Integer<size, false> &a, const Integer<size, false> &b,
+            Integer<size, false> *rem) noexcept {
         constexpr size_t n_word_bits = size * 8;
         constexpr size_t n_half_bits = size * 4;
         UI q = UI::ZERO();
@@ -1839,9 +1874,9 @@ namespace JIO {
     }
 
     template<size_t size, typename UI = Integer<size, false>,
-    typename SI = Integer<size, true>,
-    p_enable_if(p_getIntegerType(size) == pow2)>
-    constexpr inline SI p_sdivrem(const Integer<size, true> &x,
+    typename SI = Integer<size, true> >
+    constexpr inline ct::if_t<SI, p_intType(size) == pow2>
+    p_sdivrem(const Integer<size, true> &x,
             const Integer<size, true> &y, Integer<size, true> *rem) noexcept {
         bool xNeg = x.isNegative();
         bool yNeg = y.isNegative();
@@ -1856,7 +1891,7 @@ namespace JIO {
         return xNeg ^ yNeg ? -q : q;
     }
 
-    template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
+    template<size_t size, bool sig, p_IType = p_intType(size)>
     struct p_divrem_h;
 
     template<size_t size, bool sig>
@@ -1904,22 +1939,19 @@ namespace JIO {
         return p_divrem_h<size, sig>::divrem(x, y, rem);
     }
 
-    template<size_t size, typename R = Integer<size * 2, false>,
-    p_enable_if((p_getIntegerType(size) == native) &&
-            (size != p_i_utils::max_native_size))>
-    constexpr inline R
+    template<size_t size, typename R = Integer<size * 2, false> >
+    constexpr inline ct::if_t<R, (p_intType(size) == native) &&
+    (size != p_i_utils::max_native_size) >
     wmultiply(const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
         return R(v1) * R(v2);
     }
 
-    template<size_t size, p_enable_if(size == p_i_utils::max_native_size)>
-    constexpr inline Integer<size * 2, false> wmultiply(
-            const Integer<size, false> &v1,
+    template<size_t size, typename U1 = Integer<size / 2, false >,
+    typename U2 = Integer<size, false>, typename U4 = Integer<size * 2, false> >
+    constexpr inline ct::if_t<U4, size == p_i_utils::max_native_size>
+    wmultiply(const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
-        using U1 = Integer < size / 2, false >;
-        using U2 = Integer<size, false>;
-        using U4 = Integer<size * 2, false>;
         U1 a = U1(v1 >> (size * 4)), b = U1(v1);
         U1 c = U1(v2 >> (size * 4)), d = U1(v2);
         U2 ac = wmultiply(a, c);
@@ -1930,13 +1962,11 @@ namespace JIO {
         return U4(bd, ac) + (abcd << (size * 4));
     }
 
-    template<size_t size, p_enable_if(p_getIntegerType(size) == pow2)>
-    constexpr inline Integer<size * 2, false> wmultiply(
-            const Integer<size, false> &v1,
+    template<size_t size, typename U1 = Integer<size / 2, false >,
+    typename U2 = Integer<size, false>, typename U4 = Integer<size * 2, false> >
+    constexpr inline ct::if_t<U4, p_intType(size) == pow2>
+    wmultiply(const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
-        using U1 = Integer < size / 2, false >;
-        using U2 = Integer<size, false>;
-        using U4 = Integer<size * 2, false>;
         U1 a = v1.uhigh(), b = v1.ulow();
         U1 c = v2.uhigh(), d = v2.ulow();
         U2 ac = wmultiply(a, c);
@@ -1970,7 +2000,7 @@ namespace JIO {
     (size1 == size2) ? sig1 && sig2 :
     (size1 > size2 ? sig1 : sig2)>;
 
-    template<size_t size, bool sig, p_IType = p_getIntegerType(size)>
+    template<size_t size, bool sig, p_IType = p_intType(size)>
     class Integer_Base;
 
     template<size_t size, bool sig>
@@ -2065,18 +2095,18 @@ namespace JIO {
         using B::value;
 
         template<size_t size2, bool sig2,
-        bool = (p_getIntegerType(size) == native) &&
-        (p_getIntegerType(size2) == native),
-        bool = (size == size2) && (p_getIntegerType(size) == pow2),
+        bool = (p_intType(size) == native) &&
+        (p_intType(size2) == native),
+        bool = (size == size2) && (p_intType(size) == pow2),
         bool = (size != size2) &&
-        ((p_getIntegerType(size) == native) ||
-                (p_getIntegerType(size) == pow2)) &&
-        (p_getIntegerType(size2) == pow2),
-        bool = (size == size2) && (p_getIntegerType(size) == array),
-        bool = (size != size2) && (p_getIntegerType(size) == array),
-        bool = ((p_getIntegerType(size) == native) ||
-                (p_getIntegerType(size) == pow2)) &&
-        (p_getIntegerType(size2) == array)>
+        ((p_intType(size) == native) ||
+                (p_intType(size) == pow2)) &&
+        (p_intType(size2) == pow2),
+        bool = (size == size2) && (p_intType(size) == array),
+        bool = (size != size2) && (p_intType(size) == array),
+        bool = ((p_intType(size) == native) ||
+                (p_intType(size) == pow2)) &&
+        (p_intType(size2) == array)>
         struct upcast_h {
         };
 
@@ -2086,7 +2116,7 @@ namespace JIO {
             constexpr inline static Integer<size2, sig2>
             upcast(const Integer &v) noexcept {
                 using I = Integer<size2, sig2>;
-                return typename I::V(p_castUS<typename V::U,
+                return typename I::V(p_US_t<typename V::U,
                         typename V::S, sig > (v.value.value));
             }
         };
@@ -2107,7 +2137,7 @@ namespace JIO {
             constexpr inline static Integer<size2, sig2>
             upcast(const Integer &v) noexcept {
                 using I = Integer<size2, sig2>;
-                return typename I::V(p_castUS<typename I::V::U,
+                return typename I::V(p_US_t<typename I::V::U,
                         typename I::V::S, sig > (v));
             }
         };
@@ -2147,15 +2177,15 @@ namespace JIO {
         }
 
         template<size_t size2, bool sig2,
-        bool = (p_getIntegerType(size) == native) &&
-        (p_getIntegerType(size2) == native),
-        bool = (p_getIntegerType(size) == pow2) &&
-        ((p_getIntegerType(size2) == pow2) ||
-                (p_getIntegerType(size2) == native)),
-        bool = (p_getIntegerType(size) == array) &&
-        ((p_getIntegerType(size2) == pow2) ||
-                (p_getIntegerType(size2) == native)),
-        bool = (p_getIntegerType(size2) == array)>
+        bool = (p_intType(size) == native) &&
+        (p_intType(size2) == native),
+        bool = (p_intType(size) == pow2) &&
+        ((p_intType(size2) == pow2) ||
+                (p_intType(size2) == native)),
+        bool = (p_intType(size) == array) &&
+        ((p_intType(size2) == pow2) ||
+                (p_intType(size2) == native)),
+        bool = (p_intType(size2) == array)>
         struct downcast_h {
         };
 
@@ -2251,24 +2281,28 @@ namespace JIO {
             return value.subOne();
         }
 
-        template<size_t index, p_enable_if(index < size)>
-        constexpr inline uint8_t getByte() const noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<uint8_t, (index < size) >
+        getByte() const noexcept {
             return value.template getByte<index>();
         }
 
-        template<size_t index, p_enable_if(index < size)>
-        constexpr inline Integer& setByte(uint8_t v) noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<Integer&, (index < size) >
+        setByte(uint8_t v) noexcept {
             value.template setByte<index>(v);
             return *this;
         }
 
-        template<size_t index, p_enable_if(index < size * 8)>
-        constexpr inline bool getBit() const noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<bool, (index < size * 8) >
+        getBit() const noexcept {
             return value.template getBit<index>();
         }
 
-        template<size_t index, p_enable_if(index < size * 8)>
-        constexpr inline Integer& setBit(bool v) noexcept {
+        template<size_t index>
+        constexpr inline ct::if_t<Integer&, (index < size * 8) >
+        setBit(bool v) noexcept {
             value.template setBit<index>(v);
             return *this;
         }
@@ -2372,39 +2406,40 @@ namespace JIO {
             return *this;
         }
 
-        template<typename T>
-        constexpr inline Integer(p_bool_t<T> n) noexcept :
+        template<typename T, ct::if_bool_t<bool, T> = true >
+        constexpr inline Integer(T n) noexcept :
         Integer(V(typename V::U(n))) { }
 
         template<size_t size1, bool sig1, size_t size2, bool sig2,
-        p_enable_if((p_getIntegerType(size) == pow2) &&
-                (size1 <= size / 2) && (size2 <= size / 2))>
+        ct::if_t<bool, (p_intType(size) == pow2) &&
+        (size1 <= size / 2) && (size2 <= size / 2)> = true >
         constexpr inline Integer(const Integer<size1, sig1> &low,
                 const Integer<size2, sig2> &high) noexcept :
         Integer(V(low, high)) { }
 
         template<typename T1, typename T2,
-        p_enable_if((p_getIntegerType(size) == pow2) &&
-                (sizeof (T1) <= size / 2) && (sizeof (T2) <= size / 2))>
-        constexpr inline Integer(const p_int_t<T1> low,
-                const p_int_t<T2> high) noexcept : Integer(V(low, high)) { }
+        ct::if_t<bool, (p_intType(size) == pow2) &&
+        (sizeof (T1) <= size / 2) && (sizeof (T2) <= size / 2)> = true,
+        ct::if_int_t<bool, T1> = true, ct::if_int_t<bool, T2> = true >
+        constexpr inline Integer(const T1 low,
+                const T2 high) noexcept : Integer(V(low, high)) { }
 
         template<typename T, size_t size2, bool sig2,
-        p_enable_if((p_getIntegerType(size) == pow2) &&
-                (sizeof (T) <= size / 2) && (size2 <= size / 2))>
-        constexpr inline Integer(const p_int_t<T> low,
+        ct::if_t<bool, (p_intType(size) == pow2) && (size2 <= size / 2)> = true,
+        ct::if_int_t<bool, T, (sizeof (T) <= size / 2)> = true >
+        constexpr inline Integer(const T low,
                 const Integer<size2, sig2> &high) noexcept :
         Integer(V(low, high)) { }
 
         template<size_t size2, bool sig2, typename T,
-        p_enable_if((p_getIntegerType(size) == pow2) &&
-                (size2 <= size / 2) && (sizeof (T) <= size / 2))>
+        ct::if_t<bool, (p_intType(size) == pow2) && (size2 <= size / 2)> = true,
+        ct::if_int_t<bool, T, (sizeof (T) <= size / 2)> = true >
         constexpr inline Integer(const Integer<size2, sig2> &low,
-                const p_int_t<T> high) noexcept : Integer(V(low, high)) { }
+                const T high) noexcept : Integer(V(low, high)) { }
 
     private:
 
-        template<typename T, p_IType = p_getIntegerType(size)>
+        template<typename T, p_IType = p_intType(size)>
         struct tcast_h {
         };
 
@@ -2434,20 +2469,20 @@ namespace JIO {
 
     public:
 
-        template<typename T, p_enable_if(size >= sizeof (T))>
-        constexpr inline Integer(const p_int_t<T> n) noexcept :
+        template<typename T, ct::if_int_t<bool, T, (size >= sizeof (T))> = true >
+        constexpr inline Integer(const T n) noexcept :
         Integer(V(tcast_h<T>::tcast(n))) { }
 
-        template<typename T, p_enable_if(size < sizeof (T))>
-        constexpr explicit inline Integer(const p_int_t<T> n) noexcept :
+        template<typename T, ct::if_int_t<bool, T, (size < sizeof (T))> = true >
+        constexpr explicit inline Integer(const T n) noexcept :
         Integer(V(tcast_h<T>::tcast(n))) { }
 
-        template<size_t size2, bool sig2, p_enable_if(size2 >= size)>
+        template<size_t size2, bool sig2, ct::if_t<bool, (size2 >= size)> = true >
         constexpr inline operator Integer<size2, sig2>() const noexcept {
             return upcast<size2, sig2>();
         }
 
-        template<size_t size2, bool sig2, p_enable_if(size2 < size)>
+        template<size_t size2, bool sig2, ct::if_t<bool, (size2 < size)> = true >
         constexpr explicit inline
         operator Integer<size2, sig2>() const noexcept {
             return downcast<size2, sig2>();
@@ -2456,9 +2491,9 @@ namespace JIO {
     private:
 
         template<typename T,
-        bool = (p_getIntegerType(size) == native) && (sizeof (T) >= size),
-        bool = (p_getIntegerType(size) == native) && (sizeof (T) < size),
-        bool = (p_getIntegerType(size) != native)>
+        bool = (p_intType(size) == native) && (sizeof (T) >= size),
+        bool = (p_intType(size) == native) && (sizeof (T) < size),
+        bool = (p_intType(size) != native)>
         struct pcast_h {
         };
 
@@ -2466,8 +2501,7 @@ namespace JIO {
         struct pcast_h<T, true, false, false> {
 
             constexpr inline static T pcast(const Integer& v) noexcept {
-                return T(p_castUS<typename V::U, typename V::S,
-                        sig, typename V::U > (v.value.value));
+                return T(p_US_t<typename V::U, typename V::S, sig > (v.value.value));
             }
         };
 
@@ -2489,18 +2523,13 @@ namespace JIO {
 
     public:
 
-        template<typename T, p_enable_if(sizeof (T) >= size)>
-        constexpr inline operator p_int_t<T>() const noexcept {
+        template<typename T, ct::if_int_t<bool, T> = true >
+        constexpr inline operator T() const noexcept {
             return pcast_h<T>::pcast(*this);
         }
 
-        template<typename T, p_enable_if(sizeof (T) < size)>
-        constexpr explicit inline operator p_int_t<T>() const noexcept {
-            return pcast_h<T>::pcast(*this);
-        }
-
-        template<typename T>
-        constexpr inline operator p_bool_t<T>() const noexcept {
+        template<typename T, ct::if_bool_t<bool, T> = true >
+        constexpr inline operator T() const noexcept {
             return !(this->isZero());
         }
 
@@ -2567,8 +2596,8 @@ namespace JIO {
         }
 
         template<typename T>
-        constexpr inline Integer
-        operator<<(const p_int_t<T> v2) const noexcept {
+        constexpr inline ct::if_int_t<Integer, T>
+        operator<<(const T v2) const noexcept {
             return value << p_SHType<size>(v2);
         }
 
@@ -2579,8 +2608,8 @@ namespace JIO {
         }
 
         template<typename T>
-        constexpr inline Integer
-        operator>>(const p_int_t<T> v2) const noexcept {
+        constexpr inline ct::if_int_t<Integer, T>
+        operator>>(const T v2) const noexcept {
             return V(value >> p_SHType<size>(v2));
         }
 
@@ -2678,7 +2707,7 @@ namespace JIO {
         constexpr inline R
         div_ten_const_h(p_i_seq::array_t<size_t, index...>) noexcept {
             R out = R::ZERO();
-            p_i_seq::unused_array<size>({
+            p_i_seq::unused_array({
                 (out.template setByte<index>(index == 0 ? 0xcd : 0xcc))...
             });
             return out;
@@ -2689,16 +2718,16 @@ namespace JIO {
             return div_ten_const_h<size>(p_i_seq::make_array<size_t, 0, size>());
         }
 
-        template<size_t size, p_enable_if(p_getIntegerType(size) == native)>
-        constexpr inline unsigned
+        template<size_t size>
+        constexpr inline ct::if_t<unsigned, p_intType(size) == native>
         divremTen(Integer<size, false> &v) noexcept {
             unsigned tmp = unsigned(v);
             v /= Integer<size, false>(10);
             return tmp - unsigned(v) * 10;
         }
 
-        template<size_t size, p_enable_if(p_getIntegerType(size) == pow2)>
-        constexpr inline unsigned
+        template<size_t size>
+        constexpr inline ct::if_t<unsigned, p_intType(size) == pow2>
         divremTen(Integer<size, false> &v) noexcept {
             constexpr Integer<size, false> dc = div_ten_const<size>();
             unsigned tmp = unsigned(v);
@@ -2806,387 +2835,361 @@ namespace JIO {
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator+(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator+(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) + R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator+(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator+(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) + R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator+=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
         return v1 = (v1 + Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator+=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator+=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 + Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator+=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator+=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer<sizeof (T), p_is_signed<T>()>;
         return v1 = T(R(v1) + R(v2));
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator-(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator-(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) - R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator-(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator-(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) - R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator-=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
         return v1 = (v1 - Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator-=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator-=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 - Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator-=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator-=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer<sizeof (T), p_is_signed<T>()>;
         return v1 = T(R(v1) - R(v2));
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator*(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator*(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) * R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator*(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator*(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) * R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator*=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
         return v1 = (v1 * Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator*=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator*=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 * Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator*=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator*=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer<sizeof (T), p_is_signed<T>()>;
         return v1 = T(R(v1) * R(v2));
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator/(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator/(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) / R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator/(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator/(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) / R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator/=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
-        return v1 = (v1 / Integer<size1, sig1>(v2));
+        return v1 = Integer<size1, sig1>(v1 / v2);
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator/=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        return v1 = (v1 / Integer<size1, sig1>(v2));
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator/=(Integer<size1, sig1> &v1, const T v2) noexcept {
+        return v1 = Integer<size1, sig1>(v1 / v2);
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator/=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer<sizeof (T), p_is_signed<T>()>;
-        return v1 = T(R(v1) / R(v2));
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator/=(T &v1, const Integer<size1, sig1> &v2) noexcept {
+        return v1 = T(v1 / v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator%(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator%(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) % R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator%(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator%(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) % R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator%=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
-        return v1 = (v1 % Integer<size1, sig1>(v2));
+        return v1 = Integer<size1, sig1>(v1 % v2);
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator%=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
-        return v1 = (v1 % Integer<size1, sig1>(v2));
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator%=(Integer<size1, sig1> &v1, const T v2) noexcept {
+        return v1 = Integer<size1, sig1>(v1 % v2);
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator%=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
-        using R = Integer<sizeof (T), p_is_signed<T>()>;
-        return v1 = T(R(v1) % R(v2));
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator%=(T &v1, const Integer<size1, sig1> &v2) noexcept {
+        return v1 = T(v1 % v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator|(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator|(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) | R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator|(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator|(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) | R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator|=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
         return v1 = (v1 | Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator|=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator|=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 | Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator|=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator|=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer<sizeof (T), p_is_signed<T>()>;
         return v1 = T(R(v1) | R(v2));
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator&(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator&(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) & R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator&(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator&(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) & R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator&=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
         return v1 = (v1 & Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator&=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator&=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 & Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator&=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator&=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer<sizeof (T), p_is_signed<T>()>;
         return v1 = T(R(v1) & R(v2));
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator^(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator^(const Integer<size1, sig1> &v1, const T v2) noexcept {
         return R(v1) ^ R(v2);
     }
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
-    constexpr inline R
-    operator^(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<R, T>
+    operator^(const T v1, const Integer<size1, sig1> &v2) noexcept {
         return R(v1) ^ R(v2);
     }
 
-    template<size_t size1, bool sig1, size_t size2, bool sig2,
-    p_enable_if(size2 <= size1)>
+    template<size_t size1, bool sig1, size_t size2, bool sig2>
     constexpr inline Integer<size1, sig1>&
     operator^=(Integer<size1, sig1> &v1,
             const Integer<size2, sig2> &v2) noexcept {
         return v1 = (v1 ^ Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(sizeof (T) <= size1)>
-    constexpr inline Integer<size1, sig1>&
-    operator^=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator^=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 ^ Integer<size1, sig1>(v2));
     }
 
-    template<size_t size1, bool sig1, typename T,
-    p_enable_if(size1 <= sizeof (T))>
-    constexpr inline T&
-    operator^=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    template<size_t size1, bool sig1, typename T>
+    constexpr inline ct::if_int_t<T&, T>
+    operator^=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer<sizeof (T), p_is_signed<T>()>;
         return v1 = T(R(v1) ^ R(v2));
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator==(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator==(const Integer<size1, sig1> &v1, const T v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) == R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator==(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator==(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) == R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator!=(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator!=(const Integer<size1, sig1> &v1, const T v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) != R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator!=(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator!=(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) != R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator<=(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator<=(const Integer<size1, sig1> &v1, const T v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) <= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator<=(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator<=(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) <= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator>=(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator>=(const Integer<size1, sig1> &v1, const T v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) >= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator>=(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator>=(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) >= R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator<(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator<(const Integer<size1, sig1> &v1, const T v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) < R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator<(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator<(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) < R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator>(const Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator>(const Integer<size1, sig1> &v1, const T v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) > R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline bool
-    operator>(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<bool, T>
+    operator>(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>;
         return R(v1) > R(v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline T
-    operator<<(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<T, T>
+    operator<<(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer <sizeof (T), (p_is_signed<T>())>;
         return T(R(v1) << v2);
     }
@@ -3199,20 +3202,20 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline Integer<size1, sig1>&
-    operator<<=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator<<=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 << v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline T&
-    operator<<=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<T&, T>
+    operator<<=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         return v1 = T(Integer<sizeof (T), p_is_signed<T>()>(v1) << v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline T
-    operator>>(const p_int_t<T> v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<T, T>
+    operator>>(const T v1, const Integer<size1, sig1> &v2) noexcept {
         using R = Integer <sizeof (T), (p_is_signed<T>())>;
         return T(R(v1) >> v2);
     }
@@ -3225,14 +3228,14 @@ namespace JIO {
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline Integer<size1, sig1>&
-    operator>>=(Integer<size1, sig1> &v1, const p_int_t<T> v2) noexcept {
+    constexpr inline ct::if_int_t<Integer<size1, sig1>&, T>
+    operator>>=(Integer<size1, sig1> &v1, const T v2) noexcept {
         return v1 = (v1 >> v2);
     }
 
     template<size_t size1, bool sig1, typename T>
-    constexpr inline T&
-    operator>>=(p_int_t<T> &v1, const Integer<size1, sig1> &v2) noexcept {
+    constexpr inline ct::if_int_t<T&, T>
+    operator>>=(T &v1, const Integer<size1, sig1> &v2) noexcept {
         return v1 = T(Integer<sizeof (T), p_is_signed<T>()>(v1) >> v2);
     }
 
@@ -3321,57 +3324,60 @@ namespace JIO {
             return Integer<1, sig>::ZERO();
         }
 
-        template<int min, int max, int value,
-        p_enable_if((value >= min) && (value <= max))>
-        constexpr inline int contains() noexcept {
+        template<int min, int max, int value>
+        constexpr inline ct::if_t<int, (value >= min) && (value <= max) >
+        contains() noexcept {
             return value;
         }
 
         template<int min, int max, char... chars>
-        constexpr inline auto verify() noexcept {
-            return array_t<int, contains<min, max,
-                    p_i_utils::indexOfDigit<chars>()>()...>();
-        }
+        using verify = array_t<int, contains<min, max,
+        p_i_utils::indexOfDigit<chars>()>()...>;
+
+        template<int min, int max, char... chars>
+        struct remove_zeros_and_verify_h {
+            typedef verify<min, max, chars...> type;
+        };
+
+        template<int min, int max, char... chars>
+        using remove_zeros_and_verify =
+        typename remove_zeros_and_verify_h<min, max, chars...>::type;
+
+        template<int min, int max, char... chars>
+        struct remove_zeros_and_verify_h <min, max, '0', chars...> {
+            typedef remove_zeros_and_verify<min, max, chars...> type;
+        };
 
         template<int min, int max>
-        constexpr inline auto remove_zeros_and_verify() noexcept {
-            return array_t<int>();
-        }
-
-        template<int min, int max, char a, char... chars, p_enable_if(a != '0')>
-        constexpr inline auto remove_zeros_and_verify() noexcept {
-            return verify<min, max, a, chars...>();
-        }
-
-        template<int min, int max, char a, char... chars, p_enable_if(a == '0')>
-        constexpr inline auto remove_zeros_and_verify() noexcept {
-            return remove_zeros_and_verify<min, max, chars...>();
-        }
+        struct remove_zeros_and_verify_h <min, max> {
+            typedef array_t<int> type;
+        };
 
         template<bool sig, char a, char b, char... chars,
-        p_enable_if((a == '0') && !(b == 'b' || b == 'B' || b == 'x' || b == 'X'))>
+        ct::if_t<bool, (a == '0') && !(b == 'b' || b == 'B' || b == 'x' || b == 'X')> = true >
         constexpr inline auto parse() noexcept {
             return parseOct<sig>(remove_zeros_and_verify<0, 7, b, chars...>());
         }
 
         template<bool sig, char a, char b, char... chars,
-        p_enable_if((a == '0') && (b == 'b' || b == 'B'))>
+        ct::if_t<bool, (a == '0') && (b == 'b' || b == 'B')> = true >
         constexpr inline auto parse() noexcept {
             return parseBin<sig>(remove_zeros_and_verify<0, 1, chars...>());
         }
 
         template<bool sig, char a, char b, char... chars,
-        p_enable_if((a == '0') && (b == 'x' || b == 'X'))>
+        ct::if_t<bool, (a == '0') && (b == 'x' || b == 'X')> = true >
         constexpr inline auto parse() noexcept {
             return parseHex<sig>(remove_zeros_and_verify<0, 15, chars...>());
         }
 
-        template<bool sig, char a, char... chars, p_enable_if(a != '0')>
+        template<bool sig, char a, char... chars,
+        ct::if_t<bool, a != '0' > = true >
         constexpr inline auto parse() noexcept {
             return parseDec<sig>(remove_zeros_and_verify<0, 10, a, chars...>());
         }
 
-        template<bool sig, char a, p_enable_if(a == '0')>
+        template<bool sig, char a, ct::if_t<bool, a == '0' > = true >
         constexpr inline auto parse() noexcept {
             return Integer<1, sig>(0);
         }
@@ -3386,8 +3392,6 @@ namespace JIO {
     constexpr inline auto operator""_SI() noexcept {
         return p_literal::parse<true, chars...>();
     }
-
-#undef p_enable_if
 }
 
 #endif /* INTEGER_HPP */
