@@ -267,7 +267,7 @@ namespace JIO {
         }
 
         constexpr inline int bitCount_h(uint32_t value) noexcept {
-            uint tmp = value - ((value >> 1) & 0x55555555);
+            uint32_t tmp = value - ((value >> 1) & 0x55555555);
             tmp = ((tmp >> 2) & 0x33333333) + (tmp & 0x33333333);
             return ((((tmp >> 4) + tmp) & 0xf0f0f0f) * 0x1010101) >> 24;
         }
