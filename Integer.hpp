@@ -1505,7 +1505,7 @@ namespace JIO {
         constexpr inline static void
         copy_from(I &out, const Integer<size2, sig2> &value,
                 A<size_t, index...>) noexcept {
-            p_i_seq::unused_array<size>({
+            p_i_seq::unused_array({
                 (out.template setByte<index>(value.template getByte<index>()))...
             });
         }
@@ -1514,7 +1514,7 @@ namespace JIO {
         constexpr inline static void
         copy_to(Integer<size2, sig2> &out, const I &value,
                 A<size_t, index...>) noexcept {
-            p_i_seq::unused_array<size2>({
+            p_i_seq::unused_array({
                 (out.template setByte<index>(value.template getByte<index>()))...
             });
         }
@@ -1623,7 +1623,7 @@ namespace JIO {
         template<size_t... index>
         constexpr inline static bool
         leftShiftOneBit_h(I &v, bool bit, A<size_t, index...>) noexcept {
-            p_i_seq::unused_array<T::length>({
+            p_i_seq::unused_array({
                 (bit = U::leftShiftOneBit(v.data[index], bit))...
             });
             return bit;
