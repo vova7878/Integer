@@ -139,10 +139,21 @@ namespace JIO {
                     make_array<size_t, index + 1, sizeof...(arr)>(), arr...);
         }
 
+        template<size_t index, typename... Tp>
+        using element_t = decltype(element<index>(std::declval<Tp>()...));
+
         template<typename... Tp>
         constexpr inline auto last_element(Tp... arr) noexcept {
             return element<sizeof...(arr) - 1 > (arr...);
         }
+
+        template <typename... Tp>
+        struct t_array_t {
+            constexpr static size_t length = sizeof...(Tp);
+
+            template<size_t index>
+            using get = element_t<index, Tp...>;
+        };
 
         template<typename T, size_t length, size_t... index>
         constexpr inline bool
