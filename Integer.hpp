@@ -53,16 +53,24 @@ namespace JIO {
 
         template <typename T, T... values>
         struct array_t {
+            using type = T;
+            constexpr static size_t length = sizeof...(values);
+
+            constexpr inline static const T get(size_t index) noexcept {
+                constexpr T data[length == 0 ? 1 : length] = {values...};
+                return data[index];
+            }
 
             constexpr inline const T operator[](size_t index) const noexcept {
-                static_assert(sizeof...(values) != 0, "zero-size array");
-                constexpr T data[sizeof...(values)] = {values...};
+                constexpr T data[length == 0 ? 1 : length] = {values...};
                 return data[index];
             }
         };
 
-        template <typename T, size_t length>
+        template <typename T, size_t size>
         struct v_array_t {
+            using type = T;
+            constexpr static size_t length = size;
             T data[length == 0 ? 1 : length];
 
             constexpr inline const T& operator[](size_t index) const noexcept {
@@ -84,10 +92,8 @@ namespace JIO {
         constexpr inline void unused_array(std::initializer_list<unused>) noexcept { }
 
         template<typename T, T... v1, T... v2>
-        constexpr inline array_t<T, v1..., v2...>
-        append(array_t<T, v1...>, array_t<T, v2...>) noexcept {
-            return {};
-        }
+        array_t<T, v1..., v2...>
+        append(array_t<T, v1...>, array_t<T, v2...>);
 
         template <typename T, T f, T l,
         int = (f > l) ? -1 : (l == f ? 0 : ((l - f == 1) ? 1 : 2))>
