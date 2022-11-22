@@ -28,6 +28,7 @@
 #include <initializer_list>
 #include <cstddef>
 #include <ostream>
+#include <limits>
 
 // -std=c++14
 namespace JIO {
@@ -51,6 +52,8 @@ namespace JIO {
 
     namespace p_i_seq {
 
+        using signed_size_t = std::make_signed<size_t>::type;
+
         template <typename T, T... values>
         struct array_t {
             using type = T;
@@ -65,6 +68,25 @@ namespace JIO {
                 constexpr T data[length == 0 ? 1 : length] = {values...};
                 return data[index];
             }
+
+            constexpr inline signed_size_t index_of(T value) const noexcept {
+                for (size_t i = 0; i < length; i++) {
+                    if (get(i) == value) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+
+            template<T value>
+            constexpr inline static signed_size_t index_of() noexcept {
+                for (size_t i = 0; i < length; i++) {
+                    if (get(i) == value) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
         };
 
         template <typename T, size_t size>
@@ -72,6 +94,15 @@ namespace JIO {
             using type = T;
             constexpr static size_t length = size;
             T data[length == 0 ? 1 : length];
+
+            constexpr inline signed_size_t index_of(T value) const noexcept {
+                for (size_t i = 0; i < length; i++) {
+                    if (data[i] == value) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
 
             constexpr inline const T& operator[](size_t index) const noexcept {
                 return data[index];
@@ -205,53 +236,145 @@ namespace JIO {
     }
 
     namespace p_i_native {
-        template<size_t size, bool sig>
+
+        using ints_t = p_i_seq::t_array_t<char, short, int, long, long long>;
+
+        template<typename Arr, size_t index>
+        constexpr inline auto is_unique_h1() {
+            bool u = true;
+            for (size_t i = 0; i < index; i++) {
+                if (Arr::get(i) == Arr::get(index)) {
+                    u = false;
+                    break;
+                }
+            }
+            return u;
+        }
+
+        template<typename Arr, size_t... index>
+        p_i_seq::array_t<bool, is_unique_h1<Arr, index>()...>
+        is_unique_h2(p_i_seq::array_t<size_t, index...>);
+
+        template<typename Arr>
+        using is_unique = decltype(is_unique_h2<Arr>(p_i_seq::make_array<size_t, 0, Arr::length>()));
+
+        template<typename... Tp>
+        is_unique<p_i_seq::array_t<size_t, sizeof (Tp)...>>
+        is_unique_size_h(p_i_seq::t_array_t<Tp...>);
+
+        template<typename Arr>
+        using is_unique_size = decltype(is_unique_size_h(Arr()));
+
+        template<bool, typename Arr, typename AT>
+        struct add_if_true {
+            using type = Arr;
+        };
+
+        template<typename AT, typename... Tp>
+        p_i_seq::t_array_t<Tp..., AT>
+        addType(p_i_seq::t_array_t<Tp...>);
+
+        template<typename Arr, typename AT>
+        struct add_if_true<true, Arr, AT> {
+            using type = decltype(addType<AT>(Arr()));
+        };
+
+        template<typename, typename, typename, size_t...>
+        struct fill_if_true_h;
+
+        template<typename Out, typename ArrT, typename ArrB>
+        struct fill_if_true_h<Out, ArrT, ArrB> {
+            using type = Out;
+        };
+
+        template<typename Out, typename ArrT, typename ArrB, size_t i, size_t... index>
+        struct fill_if_true_h<Out, ArrT, ArrB, i, index...> {
+            using type = typename fill_if_true_h<
+                    typename add_if_true<ArrB::get(i), Out, typename ArrT::get<i>>::type,
+                    ArrT, ArrB, index...>::type;
+        };
+
+        template<typename ArrT, typename ArrB, size_t... index>
+        typename fill_if_true_h<p_i_seq::t_array_t<>, ArrT, ArrB, index...>::type
+        fill_if_true_fh(p_i_seq::array_t<size_t, index...>);
+
+        template<typename ArrT, typename ArrB>
+        using fill_if_true = decltype(fill_if_true_fh<ArrT, ArrB>(p_i_seq::make_array<size_t, 0, ArrT::length>()));
+
+        template<typename Arr>
+        using fill_if_unique_size = fill_if_true<Arr, is_unique_size<Arr>>;
+
+        template<typename... Tp>
+        p_i_seq::array_t<size_t, sizeof (Tp)...>
+        sizes_array_h(p_i_seq::t_array_t<Tp...>);
+
+        template<typename Arr>
+        using sizes_array = decltype(sizes_array_h(Arr()));
+
+        using filtred_ints_t = fill_if_unique_size<ints_t>;
+        using int_sizes_t = sizes_array<filtred_ints_t>;
+
+        template<size_t size, bool sig, p_i_seq::signed_size_t = int_sizes_t::index_of<size>()>
         struct native_int_type_h;
 
-        template<>
-        struct native_int_type_h<1, false> {
-            typedef uint8_t type;
+        template<size_t size, bool sig>
+        struct native_int_type_h<size, sig, -1 > {
         };
 
-        template<>
-        struct native_int_type_h<1, true> {
-            typedef int8_t type;
+        template<size_t size, p_i_seq::signed_size_t index>
+        struct native_int_type_h<size, false, index> {
+            using type = typename std::make_unsigned<filtred_ints_t::get<index>>::type;
         };
 
-        template<>
-        struct native_int_type_h<2, false> {
-            typedef uint16_t type;
-        };
-
-        template<>
-        struct native_int_type_h<2, true> {
-            typedef int16_t type;
-        };
-
-        template<>
-        struct native_int_type_h<4, false> {
-            typedef uint32_t type;
-        };
-
-        template<>
-        struct native_int_type_h<4, true> {
-            typedef int32_t type;
-        };
-
-        template<>
-        struct native_int_type_h<8, false> {
-            typedef uint64_t type;
-        };
-
-        template<>
-        struct native_int_type_h<8, true> {
-            typedef int64_t type;
+        template<size_t size, p_i_seq::signed_size_t index>
+        struct native_int_type_h<size, true, index> {
+            using type = typename std::make_signed<filtred_ints_t::get<index>>::type;
         };
 
         template<size_t size, bool sig>
         using native_int_type = typename native_int_type_h<size, sig>::type;
 
-        constexpr static size_t max_native_size = 8;
+        template<typename T>
+        constexpr inline auto max(T a, T b) {
+            return a > b ? a : b;
+        }
+
+        template<typename Arr>
+        constexpr inline auto max() {
+            auto out = Arr::get(0);
+            for (size_t i = 1; i < Arr::length; i++) {
+                out = max(out, Arr::get(i));
+            }
+            return out;
+        }
+
+        template<typename T>
+        constexpr inline auto min(T a, T b) {
+            return a < b ? a : b;
+        }
+
+        template<typename Arr>
+        constexpr inline auto min() {
+            auto out = Arr::get(0);
+            for (size_t i = 1; i < Arr::length; i++) {
+                out = min(out, Arr::get(i));
+            }
+            return out;
+        }
+
+        template<typename T>
+        constexpr static size_t get_bits() {
+            return std::numeric_limits<typename std::make_unsigned<T>::type>::digits;
+        }
+
+        constexpr static size_t max_native_size = max<int_sizes_t>();
+        constexpr static size_t min_native_size = min<int_sizes_t>();
+
+        using max_native_t = filtred_ints_t::get<int_sizes_t::index_of<max_native_size>()>;
+        using min_native_t = filtred_ints_t::get<int_sizes_t::index_of<min_native_size>()>;
+
+        constexpr static size_t max_native_bits = get_bits<max_native_t>();
+        constexpr static size_t min_native_bits = get_bits<min_native_t>();
     }
 
     namespace p_i_utils {
