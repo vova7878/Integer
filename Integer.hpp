@@ -204,31 +204,7 @@ namespace JIO {
         }
     }
 
-    namespace p_i_utils {
-
-        constexpr static char digits[62] = {
-            '0', '1', '2', '3', '4',
-            '5', '6', '7', '8', '9',
-
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'g', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'G', 'K', 'L', 'M',
-            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
-        };
-
-        template<char c, size_t index = 0 >
-        constexpr inline ct::if_t<size_t, digits[index] == c>
-        indexOfDigit() noexcept {
-            return index < 36 ? index : index - 26;
-        }
-
-        template<char c, size_t index = 0 >
-        constexpr inline ct::if_t<size_t, digits[index] != c>
-        indexOfDigit() noexcept {
-            return indexOfDigit<c, index + 1 > ();
-        }
-
+    namespace p_i_native {
         template<size_t size, bool sig>
         struct native_int_type_h;
 
@@ -276,6 +252,32 @@ namespace JIO {
         using native_int_type = typename native_int_type_h<size, sig>::type;
 
         constexpr static size_t max_native_size = 8;
+    }
+
+    namespace p_i_utils {
+
+        constexpr static char digits[62] = {
+            '0', '1', '2', '3', '4',
+            '5', '6', '7', '8', '9',
+
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'g', 'k', 'l', 'm',
+            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'G', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+        };
+
+        template<char c, size_t index = 0 >
+        constexpr inline ct::if_t<size_t, digits[index] == c>
+        indexOfDigit() noexcept {
+            return index < 36 ? index : index - 26;
+        }
+
+        template<char c, size_t index = 0 >
+        constexpr inline ct::if_t<size_t, digits[index] != c>
+        indexOfDigit() noexcept {
+            return indexOfDigit<c, index + 1 > ();
+        }
 
         constexpr inline int bitCount_h(uint64_t value) noexcept {
             uint64_t tmp = value - ((value >> 1) & 0x5555555555555555);
@@ -299,7 +301,7 @@ namespace JIO {
 
         template<typename T>
         constexpr inline int bitCount_n(T value) noexcept {
-            return bitCount_h(native_int_type<sizeof (T), false > (value));
+            return bitCount_h(p_i_native::native_int_type<sizeof (T), false > (value));
         }
 
         constexpr inline int logb2_h(uint64_t value) {
@@ -338,7 +340,7 @@ namespace JIO {
 
         template<typename T>
         constexpr inline int logb2_n(T value) noexcept {
-            return logb2_h(native_int_type<sizeof (T), false > (value));
+            return logb2_h(p_i_native::native_int_type<sizeof (T), false > (value));
         }
 
         template<typename T>
@@ -415,8 +417,8 @@ namespace JIO {
 
     template<size_t size>
     struct p_native_Integer_Base<size, false> {
-        typedef p_i_utils::native_int_type<size, true> S;
-        typedef p_i_utils::native_int_type<size, false> U;
+        typedef p_i_native::native_int_type<size, true> S;
+        typedef p_i_native::native_int_type<size, false> U;
         typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
@@ -514,8 +516,8 @@ namespace JIO {
 
     template<size_t size>
     struct p_native_Integer_Base<size, true> {
-        typedef p_i_utils::native_int_type<size, true> S;
-        typedef p_i_utils::native_int_type<size, false> U;
+        typedef p_i_native::native_int_type<size, true> S;
+        typedef p_i_native::native_int_type<size, false> U;
         typedef p_native_Integer_Base I;
         typedef p_SHType<sizeof (U) > M;
         constexpr static M shmask = sizeof (U) * 8 - 1;
@@ -1952,7 +1954,7 @@ namespace JIO {
 
     template<size_t size, typename R = Integer<size * 2, false> >
     constexpr inline ct::if_t<R, (p_intType(size) == native) &&
-    (size != p_i_utils::max_native_size) >
+    (size != p_i_native::max_native_size) >
     wmultiply(const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
         return R(v1) * R(v2);
@@ -1960,7 +1962,7 @@ namespace JIO {
 
     template<size_t size, typename U1 = Integer<size / 2, false >,
     typename U2 = Integer<size, false>, typename U4 = Integer<size * 2, false> >
-    constexpr inline ct::if_t<U4, size == p_i_utils::max_native_size>
+    constexpr inline ct::if_t<U4, size == p_i_native::max_native_size>
     wmultiply(const Integer<size, false> &v1,
             const Integer<size, false> &v2) noexcept {
         U1 a = U1(v1 >> (size * 4)), b = U1(v1);
