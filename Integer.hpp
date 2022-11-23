@@ -495,14 +495,15 @@ namespace JIO {
         array
     };
 
-    constexpr p_IType p_intType(size_t size) noexcept {
+    constexpr inline p_IType p_intType(size_t size) noexcept {
         if (!size) {
             return illegal;
         }
-        if (size == 1 || size == 2 || size == 4 || size == 8) {
+        if (p_i_native::int_sizes_t().index_of(size) != -1) {
             return native;
         }
-        return isOneBit(size) ? pow2 : array;
+        return (size % p_i_native::max_native_size == 0) &&
+                isOneBit(size / p_i_native::max_native_size) ? pow2 : array;
     }
 
     template<size_t size, bool = (size > sizeof (unsigned int))>
