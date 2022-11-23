@@ -1843,23 +1843,24 @@ namespace JIO {
         return ~p_min_value<T, sig>();
     }
 
-    template<size_t size, typename UI = Integer<size, false> >
+    template<size_t size, typename UI = Integer<size, false>,
+    typename Uh = Integer<size / 2, false >>
     constexpr inline ct::if_t<UI, p_intType(size) == pow2>
     p_udivrem(const Integer<size, false> &a, const Integer<size, false> &b,
             Integer<size, false> *rem) noexcept {
-        constexpr size_t n_word_bits = size * 8;
-        constexpr size_t n_half_bits = size * 4;
+        constexpr size_t n_word_bits = size * p_i_native::min_native_bits;
+        constexpr size_t n_half_bits = size * p_i_native::min_native_bits / 2;
         UI q = UI::ZERO();
         UI r = UI::ZERO();
         size_t sr = 0;
         // special cases, X is unknown, K != 0
-        if (a.uhigh() == 0) {
-            if (b.uhigh() == 0) {
+        if (a.uhigh().isZero()) {
+            if (b.uhigh().isZero()) {
                 // 0 X
                 // ---
                 // 0 X
                 if (rem) {
-                    rem->uhigh() = 0;
+                    rem->uhigh() = Uh::ZERO();
                     return divrem(a.ulow(), b.ulow(), &(rem->ulow()));
                 }
                 return a.ulow() / b.ulow();
@@ -1869,11 +1870,11 @@ namespace JIO {
             // K X
             if (rem)
                 *rem = a.ulow();
-            return 0;
+            return UI::ZERO();
         }
         // a.uhigh() != 0
-        if (b.ulow() == 0) {
-            if (b.uhigh() == 0) {
+        if (b.ulow().isZero()) {
+            if (b.uhigh().isZero()) {
                 // K X
                 // ---
                 // 0 0
@@ -1883,12 +1884,12 @@ namespace JIO {
                 return a.uhigh() / b.ulow();
             }
             // b.uhigh() != 0
-            if (a.ulow() == 0) {
+            if (a.ulow().isZero()) {
                 // K 0
                 // ---
                 // K 0
                 if (rem) {
-                    rem->ulow() = 0;
+                    rem->ulow() = Uh::ZERO();
                     return divrem(a.uhigh(), b.uhigh(), &(rem->uhigh()));
                 }
                 return a.uhigh() / b.uhigh();
@@ -1913,17 +1914,17 @@ namespace JIO {
                 if (rem) {
                     *rem = a;
                 }
-                return 0;
+                return UI::ZERO();
             }
             ++sr;
             // 1 <= sr <= n_half_bits - 1
             // q = a << (n_word_bits - sr);
-            q.ulow() = 0;
+            q.ulow() = Uh::ZERO();
             q.uhigh() = a.ulow() << (n_half_bits - sr);
 
             r = a >> sr;
         } else /* b.ulow() != 0 */ {
-            if (b.uhigh() == 0) {
+            if (b.uhigh().isZero()) {
                 // K X
                 // ---
                 // 0 K
@@ -1931,6 +1932,7 @@ namespace JIO {
                     if (rem) {
                         *rem = a.ulow() & (b.ulow() - 1);
                     }
+                    //TODO
                     if (b.ulow() == 1) {
                         return a;
                     }
@@ -1946,17 +1948,17 @@ namespace JIO {
                 // q = a << (n_word_bits - sr);
                 // r = a >> sr;
                 if (sr == n_half_bits) {
-                    q.ulow() = 0;
+                    q.ulow() = Uh::ZERO();
                     q.uhigh() = a.ulow();
-                    r.uhigh() = 0;
+                    r.uhigh() = Uh::ZERO();
                     r.ulow() = a.uhigh();
                 } else if (sr < n_half_bits) /* 2 <= sr <= n_half_bits - 1 */ {
-                    q.ulow() = 0;
+                    q.ulow() = Uh::ZERO();
                     q.uhigh() = a.ulow() << (n_half_bits - sr);
                     r = a >> sr;
                 } else /* n_half_bits + 1 <= sr <= n_word_bits - 1 */ {
                     q = a << (n_word_bits - sr);
-                    r.uhigh() = 0;
+                    r.uhigh() = Uh::ZERO();
                     r.ulow() = a.uhigh() >> (sr - n_half_bits);
                 }
             } else {
@@ -1968,16 +1970,16 @@ namespace JIO {
                 if (sr > n_half_bits - 1) {
                     if (rem)
                         *rem = a;
-                    return 0;
+                    return UI::ZERO();
                 }
                 ++sr;
                 // 1 <= sr <= n_half_bits
                 // q = a << (n_word_bits - sr);
                 // r = a >> sr;
-                q.ulow() = 0;
+                q.ulow() = Uh::ZERO();
                 if (sr == n_half_bits) {
                     q.uhigh() = a.ulow();
-                    r.uhigh() = 0;
+                    r.uhigh() = Uh::ZERO();
                     r.ulow() = a.uhigh();
                 } else {
                     r = a >> sr;
@@ -1990,11 +1992,10 @@ namespace JIO {
         // q = a << (n_word_bits - sr);
         // r = a >> sr;
         // 1 <= sr <= n_word_bits - 1
-        bool carry = 0;
+        bool carry = false;
         for (; sr > 0; --sr) {
-            // r:q = ((r:q)  << 1) | carry
-            UI::leftShiftOneBit(r, q.upperBit());
-            UI::leftShiftOneBit(q, carry);
+            // r:q = ((r:q) << 1) | carry
+            UI::leftShiftOneBit(r, UI::leftShiftOneBit(q, carry));
 
             carry = false;
             if (r >= b) {
