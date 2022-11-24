@@ -399,6 +399,44 @@ namespace JIO {
             return index < 36 ? index : index - 26;
         }
 
+        constexpr inline size_t lpo2_s(size_t value) noexcept {
+            size_t i = 0;
+            size_t p = 1;
+            for (; p <= value && i < p_i_native::get_bits<size_t>(); i++) {
+                p <<= 1;
+            }
+            return i - 1;
+        }
+
+        template<size_t... sh, size_t... add>
+        p_i_seq::array_t<size_t, (1 << sh)..., add...>
+        sh_array_h(p_i_seq::array_t<size_t, sh...>,
+                p_i_seq::array_t<size_t, add...>);
+
+        template<typename Arr, size_t bits, bool = isOneBit(bits)>
+        struct sh_array_h2 {
+            using type = decltype(sh_array_h(Arr(), p_i_seq::array_t<size_t>()));
+        };
+
+        template<typename Arr, size_t bits>
+        struct sh_array_h2<Arr, bits, false> {
+            using type = decltype(sh_array_h(Arr(), p_i_seq::array_t<size_t, bits - (1 << Arr::get(Arr::length - 1)) * 2 > ()));
+        };
+
+        template<typename T, size_t bits = p_i_native::get_bits<T>()>
+        using sh_array = typename sh_array_h2<p_i_seq::make_array <size_t, 0, lpo2_s(bits)>, bits>::type;
+
+        template<typename T, size_t... sh>
+        constexpr inline T npo2m1_n_h(T value, p_i_seq::array_t<size_t, sh...>) noexcept {
+            p_i_seq::unused_array({(value |= (value >> sh))...});
+            return value;
+        }
+
+        template<typename T>
+        constexpr inline T npo2m1_n(T value) noexcept {
+            return npo2m1_n_h<typename std::make_unsigned < T >::type > (value, sh_array<T>());
+        }
+
         constexpr inline int bitCount_h(uint64_t value) noexcept {
             uint64_t tmp = value - ((value >> 1) & 0x5555555555555555);
             tmp = ((tmp >> 2) & 0x3333333333333333) + (tmp & 0x3333333333333333);
@@ -424,48 +462,14 @@ namespace JIO {
             return bitCount_h(p_i_native::native_int_type<sizeof (T), false > (value));
         }
 
-        constexpr inline int logb2_h(uint64_t value) {
-            value |= (value >> 1);
-            value |= (value >> 2);
-            value |= (value >> 4);
-            value |= (value >> 8);
-            value |= (value >> 16);
-            value |= (value >> 32);
-            return bitCount_n(value);
-        }
-
-        constexpr inline int logb2_h(uint32_t value) noexcept {
-            value |= (value >> 1);
-            value |= (value >> 2);
-            value |= (value >> 4);
-            value |= (value >> 8);
-            value |= (value >> 16);
-            return bitCount_n(value);
-        }
-
-        constexpr inline int logb2_h(uint16_t value) noexcept {
-            value |= (value >> 1);
-            value |= (value >> 2);
-            value |= (value >> 4);
-            value |= (value >> 8);
-            return bitCount_n(value);
-        }
-
-        constexpr inline int logb2_h(uint8_t value) noexcept {
-            value |= (value >> 1);
-            value |= (value >> 2);
-            value |= (value >> 4);
-            return bitCount_n(value);
-        }
-
         template<typename T>
         constexpr inline int logb2_n(T value) noexcept {
-            return logb2_h(p_i_native::native_int_type<sizeof (T), false > (value));
+            return bitCount_n(npo2m1_n(value));
         }
 
         template<typename T>
         constexpr inline int numberOfLeadingZeros_n(T value) noexcept {
-            return sizeof (T) * 8 - logb2_n(value);
+            return sizeof (T) * p_i_native::min_native_bits - logb2_n(value);
         }
 
         template<typename T>
