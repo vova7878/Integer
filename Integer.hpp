@@ -1501,11 +1501,25 @@ namespace JIO {
         return T(-1) < T(0);
     }
 
-    template<size_t size, size_t is = lowestOneBit(size)>
+    constexpr inline size_t p_arrayElementSize(size_t array_size) {
+        if (array_size % p_i_native::max_native_size == 0) {
+            return lowestOneBit(array_size / p_i_native::max_native_size)
+                    * p_i_native::max_native_size;
+        }
+        for (size_t i = p_i_native::int_sizes_t::length; i > 0; i--) {
+            size_t tmp = p_i_native::int_sizes_t::get(i - 1);
+            if (array_size % tmp == 0) {
+                return tmp;
+            }
+        }
+        return 1;
+    }
+
+    template<size_t size, size_t es = p_arrayElementSize(size)>
     struct p_Element_Types {
-        typedef Integer<is, false> U;
-        typedef Integer<is, true> S;
-        constexpr static size_t length = size / is;
+        typedef Integer<es, false> U;
+        typedef Integer<es, true> S;
+        constexpr static size_t length = size / es;
     };
 
     template<size_t size, bool sig>
