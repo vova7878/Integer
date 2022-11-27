@@ -58,6 +58,7 @@ namespace JIO {
         struct array_t {
             using type = T;
             constexpr static size_t length = sizeof...(values);
+            using A = array_t<T, values...>;
 
             constexpr inline static const T get(size_t index) noexcept {
                 constexpr T data[length == 0 ? 1 : length] = {values...};
@@ -65,8 +66,7 @@ namespace JIO {
             }
 
             constexpr inline const T operator[](size_t index) const noexcept {
-                constexpr T data[length == 0 ? 1 : length] = {values...};
-                return data[index];
+                return get(index);
             }
 
             constexpr inline signed_size_t index_of(T value) const noexcept {
@@ -80,12 +80,7 @@ namespace JIO {
 
             template<T value>
             constexpr inline static signed_size_t index_of() noexcept {
-                for (size_t i = 0; i < length; i++) {
-                    if (get(i) == value) {
-                        return i;
-                    }
-                }
-                return -1;
+                return A().index_of(value);
             }
         };
 
