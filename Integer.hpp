@@ -358,7 +358,7 @@ namespace JIO {
         }
 
         template<typename T>
-        constexpr static size_t get_bits() {
+        constexpr inline size_t get_bits() {
             return std::numeric_limits<typename std::make_unsigned<T>::type>::digits;
         }
 
@@ -371,7 +371,15 @@ namespace JIO {
         constexpr static size_t max_native_bits = get_bits<max_native_t>();
         constexpr static size_t min_native_bits = get_bits<min_native_t>();
 
+        static_assert(min_native_size == 1, "min_native_bits != 1");
         static_assert(min_native_bits == get_bits<char>(), "min_native_bits != char_bits");
+
+        template<size_t... index>
+        constexpr inline bool check_bits(p_i_seq::array_t<size_t, index...>) {
+            return p_i_seq::all((get_bits<filtred_ints_t::get < index >> () % min_native_bits == 0)...);
+        }
+
+        static_assert(check_bits(p_i_seq::make_array<size_t, 0, filtred_ints_t::length>()), "check_bits failed");
     }
 
     namespace p_i_utils {
