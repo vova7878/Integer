@@ -440,24 +440,26 @@ namespace JIO {
             return npo2m1_n_h<typename std::make_unsigned < T >::type > (value, sh_array<T>());
         }
 
-        constexpr inline int bitCount_h(uint64_t value) noexcept {
-            uint64_t tmp = value - ((value >> 1) & 0x5555555555555555);
-            tmp = ((tmp >> 2) & 0x3333333333333333) + (tmp & 0x3333333333333333);
-            return ((((tmp >> 4) + tmp) & 0xf0f0f0f0f0f0f0f) * 0x101010101010101) >> 56;
+        //TODO!
+
+        constexpr inline int bitCount_h(p_i_native::native_int_type<8, false > value) noexcept {
+            value -= ((value >> 1) & 0x5555555555555555);
+            value = ((value >> 2) & 0x3333333333333333) + (value & 0x3333333333333333);
+            return ((((value >> 4) + value) & 0xf0f0f0f0f0f0f0f) * 0x101010101010101) >> 56;
         }
 
-        constexpr inline int bitCount_h(uint32_t value) noexcept {
-            uint32_t tmp = value - ((value >> 1) & 0x55555555);
-            tmp = ((tmp >> 2) & 0x33333333) + (tmp & 0x33333333);
-            return ((((tmp >> 4) + tmp) & 0xf0f0f0f) * 0x1010101) >> 24;
+        constexpr inline int bitCount_h(p_i_native::native_int_type<4, false > value) noexcept {
+            value -= ((value >> 1) & 0x55555555);
+            value = ((value >> 2) & 0x33333333) + (value & 0x33333333);
+            return ((((value >> 4) + value) & 0xf0f0f0f) * 0x1010101) >> 24;
         }
 
-        constexpr inline int bitCount_h(uint16_t value) noexcept {
-            return bitCount_h(uint32_t(value));
+        constexpr inline int bitCount_h(p_i_native::native_int_type<2, false > value) noexcept {
+            return bitCount_h(p_i_native::native_int_type<4, false >(value));
         }
 
-        constexpr inline int bitCount_h(uint8_t value) noexcept {
-            return bitCount_h(uint32_t(value));
+        constexpr inline int bitCount_h(p_i_native::native_int_type<1, false > value) noexcept {
+            return bitCount_h(p_i_native::native_int_type<4, false >(value));
         }
 
         template<typename T>
