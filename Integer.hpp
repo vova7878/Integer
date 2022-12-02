@@ -285,7 +285,7 @@ namespace JIO {
         template<typename Out, typename ArrT, typename ArrB, size_t i, size_t... index>
         struct fill_if_true_h<Out, ArrT, ArrB, i, index...> {
             using type = typename fill_if_true_h<
-                    typename add_if_true<ArrB::get(i), Out, typename ArrT::get<i>>::type,
+                    typename add_if_true<ArrB::get(i), Out, typename ArrT::template get<i>>::type,
                     ArrT, ArrB, index...>::type;
         };
 
