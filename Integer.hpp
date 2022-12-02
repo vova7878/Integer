@@ -306,7 +306,14 @@ namespace JIO {
         template<typename Arr>
         using sizes_array = decltype(sizes_array_h(Arr()));
 
-        using filtred_ints_t = fill_if_unique_size<ints_t>;
+        template<typename... Tp>
+        p_i_seq::t_array_t<typename std::make_unsigned<Tp>::type...>
+        unsigned_t_array_h(p_i_seq::t_array_t<Tp...>);
+
+        template<typename Arr>
+        using unsigned_t_array = decltype(unsigned_t_array_h(Arr()));
+
+        using filtred_ints_t = unsigned_t_array<fill_if_unique_size<ints_t>>;
         using int_sizes_t = sizes_array<filtred_ints_t>;
 
         template<size_t size, bool sig, p_i_seq::signed_size_t = int_sizes_t::index_of<size>()>
