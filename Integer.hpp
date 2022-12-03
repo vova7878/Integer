@@ -3432,13 +3432,17 @@ namespace JIO {
         using array_t = p_i_seq::array_t<T, values...>;
 
         constexpr size_t bits_to_bytes(size_t bits, bool sig) noexcept {
-            return p_i_utils::make_pow2((bits + 7 + sig) / 8);
+            size_t bytes = (bits + p_i_native::min_native_bits - 1 + sig) /
+                    p_i_native::min_native_bits;
+            //TODO: for unusual arch`s
+            return p_i_utils::make_pow2(bytes);
         }
 
         template<bool sig, int bit_per_symbol, int first, int... nums>
         constexpr inline auto get_bytes() noexcept {
             return bits_to_bytes(sizeof...(nums) * bit_per_symbol +
-                    (sizeof (first) * 8 - p_i_utils::numberOfLeadingZeros_n(first)), sig);
+                    (sizeof (first) * p_i_native::min_native_bits -
+                    p_i_utils::numberOfLeadingZeros_n(first)), sig);
         }
 
         template<bool sig, int... nums,
@@ -3472,7 +3476,7 @@ namespace JIO {
         template<bool sig, int... nums,
         size_t hex_bytes = bits_to_bytes(sizeof...(nums) * 4, false),
         size_t bytes = bits_to_bytes(
-                hex_bytes * 8 - parseDec_h<false, hex_bytes>(
+                hex_bytes * p_i_native::min_native_bits - parseDec_h<false, hex_bytes>(
                 array_t<int, nums...>()).numberOfLeadingZeros(), sig)>
         constexpr inline auto parseDec(array_t<int, nums...> arr) noexcept {
             return parseDec_h<sig, bytes>(arr);
