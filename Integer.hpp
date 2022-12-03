@@ -395,7 +395,8 @@ namespace JIO {
 
         template<size_t... index>
         constexpr inline bool check_bits(p_i_seq::array_t<size_t, index...>) {
-            return p_i_seq::all((get_bits<filtred_ints_t::get < index >> () % min_native_bits == 0)...);
+            return p_i_seq::all((get_bits<filtred_ints_t::get < index >> () ==
+                    sizeof (filtred_ints_t::get < index >) * min_native_bits)...);
         }
 
         static_assert(check_bits(p_i_seq::make_array<size_t, 0, filtred_ints_t::length>()), "check_bits failed");
