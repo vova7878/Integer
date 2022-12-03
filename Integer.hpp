@@ -1278,55 +1278,57 @@ namespace JIO {
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<uint8_t, (index < half) >
+        constexpr inline ct::if_t<p_i_native::min_native_t, (index < half) >
         getByte() const noexcept {
             return T::low.template getByte<index>();
         }
 
         template<size_t index>
         constexpr inline
-        ct::if_t<uint8_t, (index >= half) && (index < half * 2) >
+        ct::if_t<p_i_native::min_native_t, (index >= half) && (index < half * 2) >
         getByte() const noexcept {
             return T::high.template getByte < index - half > ();
         }
 
         template<size_t index>
         constexpr inline ct::if_t<void, (index < half) >
-        setByte(uint8_t v) noexcept {
+        setByte(p_i_native::min_native_t v) noexcept {
             T::low.template setByte<index>(v);
         }
 
         template<size_t index>
         constexpr inline
         ct::if_t<void, (index >= half) && (index < half * 2) >
-        setByte(uint8_t v) noexcept {
+        setByte(p_i_native::min_native_t v) noexcept {
             T::high.template setByte < index - half > (v);
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<bool, (index < half * 8) >
+        constexpr inline ct::if_t<bool, (index < half * p_i_native::min_native_bits) >
         getBit() const noexcept {
             return T::low.template getBit<index>();
         }
 
         template<size_t index>
         constexpr inline
-        ct::if_t<bool, (index >= half * 8)&& (index < half * 16) >
+        ct::if_t<bool, (index >= half * p_i_native::min_native_bits) &&
+        (index < half * 2 * p_i_native::min_native_bits) >
         getBit() const noexcept {
-            return T::high.template getBit < index - half * 8 > ();
+            return T::high.template getBit < index - half * p_i_native::min_native_bits > ();
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<void, (index < half * 8) >
+        constexpr inline ct::if_t<void, (index < half * p_i_native::min_native_bits) >
         setBit(bool v) noexcept {
             T::low.template setBit<index>(v);
         }
 
         template<size_t index>
         constexpr inline
-        ct::if_t<void, (index >= half * 8) && (index < half * 16) >
+        ct::if_t<void, (index >= half * p_i_native::min_native_bits) &&
+        (index < half * 2 * p_i_native::min_native_bits) >
         setBit(bool v) noexcept {
-            T::high.template setBit < index - half * 8 > (v);
+            T::high.template setBit < index - half * p_i_native::min_native_bits > (v);
         }
 
         constexpr inline static bool increment_overflow(I &value) noexcept {
