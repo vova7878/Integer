@@ -26,7 +26,6 @@
 #include <type_traits>
 #include <initializer_list>
 #include <cstddef>
-#include <limits>
 
 #ifndef __has_include
 #define INTEGER_HPP_HAS_OSTREAM 0
@@ -376,9 +375,15 @@ namespace JIO {
             return out;
         }
 
-        template<typename T>
+        template<typename T, typename UT = typename std::make_unsigned<T>::type>
         constexpr inline size_t get_bits() {
-            return std::numeric_limits<typename std::make_unsigned<T>::type>::digits;
+            UT test = ~UT(0);
+            size_t out = 0;
+            while (test) {
+                test >>= 1;
+                out++;
+            }
+            return out;
         }
 
         constexpr static size_t max_native_size = max<int_sizes_t>();
