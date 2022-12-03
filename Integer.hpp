@@ -23,7 +23,6 @@
 #ifndef INTEGER_HPP
 #define INTEGER_HPP
 
-#include <cstdint>
 #include <type_traits>
 #include <initializer_list>
 #include <cstddef>
