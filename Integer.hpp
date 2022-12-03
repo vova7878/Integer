@@ -41,6 +41,8 @@
 #include <ostream>
 #endif
 
+//TODO: shift operators
+
 // -std=c++14
 namespace JIO {
 
@@ -1884,7 +1886,7 @@ namespace JIO {
 
     template<typename T, bool sig>
     constexpr inline T p_min_value() noexcept {
-        return sig ? T(1) << (sizeof (T) * 8 - 1) : (T::ZERO());
+        return sig ? T(1) << (sizeof (T) * p_i_native::min_native_bits - 1) : (T::ZERO());
     }
 
     template<typename T, bool sig>
@@ -2125,6 +2127,8 @@ namespace JIO {
         return p_divrem_h<size, sig>::divrem(x, y, rem);
     }
 
+    //TODO
+
     template<size_t size, typename R = Integer<size * 2, false> >
     constexpr inline ct::if_t<R, (p_intType(size) == native) &&
     (size != p_i_native::max_native_size) >
@@ -2174,11 +2178,6 @@ namespace JIO {
         U4 abcd = U4(ad) + U4(bc);
 #endif
         return U4(bd, ac) + (abcd << (size * 4));
-    }
-
-    template <size_t size, bool sig>
-    constexpr inline size_t logb2(const Integer<size, sig> &value) noexcept {
-        return size * 8 - value.numberOfLeadingZeros();
     }
 
     template<size_t size1, size_t size2, bool sig1, bool sig2>
@@ -2923,6 +2922,7 @@ namespace JIO {
         }
 
         constexpr inline size_t p_digits10(size_t size, bool sig) noexcept {
+            //TODO
             static_assert(sizeof (size_t) <= 8, "too big size_t");
             return size_t(wmultiply<8>(size * 8 - sig,
                     0x4d104d427de7FbccULL).uhigh());
