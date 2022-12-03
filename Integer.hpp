@@ -27,8 +27,21 @@
 #include <type_traits>
 #include <initializer_list>
 #include <cstddef>
-#include <ostream>
 #include <limits>
+
+#ifndef __has_include
+#define INTEGER_HPP_HAS_OSTREAM 0
+#else
+#if __has_include(<ostream>)
+#define INTEGER_HPP_HAS_OSTREAM 1
+#else
+#define INTEGER_HPP_HAS_OSTREAM 0
+#endif
+#endif
+
+#if INTEGER_HPP_HAS_OSTREAM
+#include <ostream>
+#endif
 
 // -std=c++14
 namespace JIO {
@@ -2865,6 +2878,7 @@ namespace JIO {
         friend struct p_array_Integer_Impl;
     };
 
+#if INTEGER_HPP_HAS_OSTREAM
     namespace p_i_print {
 
         template<size_t size, size_t... index,
@@ -2997,6 +3011,7 @@ namespace JIO {
         p_i_print::print(tmp, out);
         return out;
     }
+#endif
 
     template<size_t size1, bool sig1, typename T,
     typename R = result_t<size1, sizeof (T), sig1, p_is_signed<T>()>>
