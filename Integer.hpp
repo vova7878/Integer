@@ -2463,26 +2463,26 @@ namespace JIO {
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<uint8_t, (index < size) >
+        constexpr inline ct::if_t<p_i_native::min_native_t, (index < size) >
         getByte() const noexcept {
             return value.template getByte<index>();
         }
 
         template<size_t index>
         constexpr inline ct::if_t<Integer&, (index < size) >
-        setByte(uint8_t v) noexcept {
+        setByte(p_i_native::min_native_t v) noexcept {
             value.template setByte<index>(v);
             return *this;
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<bool, (index < size * 8) >
+        constexpr inline ct::if_t<bool, (index < size * p_i_native::min_native_bits) >
         getBit() const noexcept {
             return value.template getBit<index>();
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<Integer&, (index < size * 8) >
+        constexpr inline ct::if_t<Integer&, (index < size * p_i_native::min_native_bits) >
         setBit(bool v) noexcept {
             value.template setBit<index>(v);
             return *this;
