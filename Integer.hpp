@@ -1773,7 +1773,7 @@ namespace JIO {
 
         template<size_t index, size_t arr_index = index / sizeof (U),
         size_t n = index % sizeof (U)>
-        constexpr inline ct::if_t<uint8_t, (index < size) >
+        constexpr inline ct::if_t<p_i_native::min_native_t, (index < size) >
         getByte() const noexcept {
             return T::data[arr_index].template getByte<n>();
         }
@@ -1781,21 +1781,21 @@ namespace JIO {
         template<size_t index, size_t arr_index = index / sizeof (U),
         size_t n = index % sizeof (U)>
         constexpr inline ct::if_t<I&, (index < size) >
-        setByte(uint8_t v) noexcept {
+        setByte(p_i_native::min_native_t v) noexcept {
             T::data[arr_index].template setByte<n>(v);
             return *this;
         }
 
-        template<size_t index, size_t arr_index = index / (sizeof (U) * 8),
-        size_t n = index % (sizeof (U) * 8)>
-        constexpr inline ct::if_t<bool, (index < size * 8) >
+        template<size_t index, size_t arr_index = index / (sizeof (U) * p_i_native::min_native_bits),
+        size_t n = index % (sizeof (U) * p_i_native::min_native_bits)>
+        constexpr inline ct::if_t<bool, (index < size * p_i_native::min_native_bits) >
         getBit() const noexcept {
             return T::data[arr_index].template getBit<n>();
         }
 
-        template<size_t index, size_t arr_index = index / (sizeof (U) * 8),
-        size_t n = index % (sizeof (U) * 8)>
-        constexpr inline ct::if_t<void, (index < size * 8) >
+        template<size_t index, size_t arr_index = index / (sizeof (U) * p_i_native::min_native_bits),
+        size_t n = index % (sizeof (U) * p_i_native::min_native_bits)>
+        constexpr inline ct::if_t<void, (index < size * p_i_native::min_native_bits) >
         setBit(bool v) noexcept {
             T::data[arr_index].template setBit<n>(v);
         }
