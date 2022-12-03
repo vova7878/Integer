@@ -832,25 +832,26 @@ namespace JIO {
         }
 
         template<size_t index>
-        constexpr inline ct::if_t<uint8_t, (index < size) >
+        constexpr inline ct::if_t<p_i_native::min_native_t, (index < size) >
         getByte() const noexcept {
-            return T::value >> (index * 8);
+            return T::value >> (index * p_i_native::min_native_bits);
         }
 
-        template<size_t index, U mask = U(~(U(0xffU) << (index * 8)))>
+        template<size_t index, U mask = U(~(U(p_i_native::min_native_t(~0)) <<
+                (index * p_i_native::min_native_bits)))>
         constexpr inline ct::if_t<void, (index < size) >
-        setByte(uint8_t v) noexcept {
-            T::value = (T::value & mask) | (U(v) << index * 8);
+        setByte(p_i_native::min_native_t v) noexcept {
+            T::value = (T::value & mask) | (U(v) << index * p_i_native::min_native_bits);
         }
 
         template<size_t index, U mask = U(U(1) << index)>
-        constexpr inline ct::if_t<bool, (index < size * 8) >
+        constexpr inline ct::if_t<bool, (index < size * p_i_native::min_native_bits) >
         getBit() const noexcept {
             return T::value & mask;
         }
 
         template<size_t index, U mask1 = U(U(1) << index), U mask2 = U(~mask1)>
-        constexpr inline ct::if_t<void, (index < size * 8) >
+        constexpr inline ct::if_t<void, (index < size * p_i_native::min_native_bits) >
         setBit(bool v) noexcept {
             T::value = v ? (T::value | mask1) : (T::value & mask2);
         }
