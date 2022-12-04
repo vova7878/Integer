@@ -1546,26 +1546,29 @@ namespace JIO {
         }
     }
 
-    constexpr inline size_t p_arrayElementSize(size_t array_size) {
-        if (array_size % p_i_native::max_native_size == 0) {
-            return lowestOneBit(array_size / p_i_native::max_native_size)
-                    * p_i_native::max_native_size;
-        }
-        for (size_t i = p_i_native::int_sizes_t::length; i > 0; i--) {
-            size_t tmp = p_i_native::int_sizes_t::get(i - 1);
-            if (array_size % tmp == 0) {
-                return tmp;
-            }
-        }
-        return 1;
-    }
+    namespace p_i_utils {
 
-    template<size_t size, size_t es = p_arrayElementSize(size)>
-    struct p_Element_Types {
-        typedef Integer<es, false> U;
-        typedef Integer<es, true> S;
-        constexpr static size_t length = size / es;
-    };
+        constexpr inline size_t arrayElementSize(size_t array_size) {
+            if (array_size % p_i_native::max_native_size == 0) {
+                return lowestOneBit(array_size / p_i_native::max_native_size)
+                        * p_i_native::max_native_size;
+            }
+            for (size_t i = p_i_native::int_sizes_t::length; i > 0; i--) {
+                size_t tmp = p_i_native::int_sizes_t::get(i - 1);
+                if (array_size % tmp == 0) {
+                    return tmp;
+                }
+            }
+            return 1;
+        }
+
+        template<size_t size, size_t es = arrayElementSize(size)>
+        struct Element_Types {
+            typedef Integer<es, false> U;
+            typedef Integer<es, true> S;
+            constexpr static size_t length = size / es;
+        };
+    }
 
     template<size_t size, bool sig>
     struct p_array_Integer_Base;
@@ -1580,7 +1583,7 @@ namespace JIO {
 
     template<size_t size>
     struct p_array_Integer_Base<size, false> {
-        typedef p_Element_Types<size> ET;
+        typedef p_i_utils::Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
         typedef p_array_Integer_Base I;
@@ -1625,7 +1628,7 @@ namespace JIO {
 
     template<size_t size>
     struct p_array_Integer_Base<size, true> {
-        typedef p_Element_Types<size> ET;
+        typedef p_i_utils::Element_Types<size> ET;
         typedef typename ET::S S;
         typedef typename ET::U U;
         typedef p_array_Integer_Base I;
