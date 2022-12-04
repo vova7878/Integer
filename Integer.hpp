@@ -2227,12 +2227,8 @@ namespace JIO {
 
     public:
 
-        template<typename T, ct::if_int_t<bool, T, (size >= sizeof (T))> = true >
+        template<typename T, ct::if_int_t<bool, T> = true >
         constexpr inline Integer(const T n) noexcept :
-        Integer(V(tcast_h<T>::tcast(n))) { }
-
-        template<typename T, ct::if_int_t<bool, T, (size < sizeof (T))> = true >
-        constexpr explicit inline Integer(const T n) noexcept :
         Integer(V(tcast_h<T>::tcast(n))) { }
 
         template<size_t size2, bool sig2, ct::if_t<bool, (size2 >= size)> = true >
@@ -2241,8 +2237,7 @@ namespace JIO {
         }
 
         template<size_t size2, bool sig2, ct::if_t<bool, (size2 < size)> = true >
-        constexpr explicit inline
-        operator Integer<size2, sig2>() const noexcept {
+        constexpr inline operator Integer<size2, sig2>() const noexcept {
             return downcast<size2, sig2>();
         }
 
