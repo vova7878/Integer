@@ -618,20 +618,23 @@ namespace JIO {
             }
         }
 
-        enum struct IKind {
-            illegal = 0, native, pow2, array
-        };
+        namespace impl {
 
-        constexpr inline IKind i_kind(size_t size) noexcept {
-            if (!size) {
-                return IKind::illegal;
+            enum struct IKind {
+                illegal = 0, native, pow2, array
+            };
+
+            constexpr inline IKind i_kind(size_t size) noexcept {
+                if (!size) {
+                    return IKind::illegal;
+                }
+                if (type_traits::int_sizes_t::index_of(size) != -1) {
+                    return IKind::native;
+                }
+                return (size % type_traits::max_native_size == 0) &&
+                        type_traits::is_pow2(size / type_traits::max_native_size) ?
+                        IKind::pow2 : IKind::array;
             }
-            if (type_traits::int_sizes_t::index_of(size) != -1) {
-                return IKind::native;
-            }
-            return (size % type_traits::max_native_size == 0) &&
-                    type_traits::is_pow2(size / type_traits::max_native_size) ?
-                    IKind::pow2 : IKind::array;
         }
     }
 }
