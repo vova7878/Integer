@@ -288,27 +288,6 @@ namespace JIO {
             template<template<size_t> typename T, size_t low, size_t high>
             using t_array_by_index = typename make_index_seq<low, high>::template transform_t_array_auto<T>;
 
-            //template<typename F, typename T, T... values>
-            //constexpr decltype(auto)
-            //apply_seq(F&& func, c_array<T, values...>) noexcept {
-            //    return micro_std::jforward<F>(func) (std::integral_constant<T, values>()...);
-            //}
-            //
-            //template<typename T, size_t low, size_t high, typename F>
-            //constexpr decltype(auto) apply_seq(F&& func) noexcept {
-            //    return apply_seq(micro_std::jforward<F>(func), make_seq<T, low, high>());
-            //}
-
-            /*template <size_t... seq1, size_t... seq2, typename... Tp>
-            constexpr inline decltype(auto) pack_element_h(index_seq<seq1...>,
-                    index_seq<seq2...>, Tp&&... arr) noexcept {
-                auto impl = [](ignore_index_t<seq1>...,
-                        auto&& out, ignore_index_t<seq2>...) -> decltype(auto) {
-                            return micro_std::jforward<decltype(out)>(out);
-                        };
-                return impl(micro_std::jforward<Tp>(arr)...);
-            }*/
-
             template<size_t... seq>
             struct pack_element_h {
 
