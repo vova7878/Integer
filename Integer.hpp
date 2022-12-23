@@ -533,32 +533,6 @@ namespace JIO {
             template<typename Arr>
             using make_unsigned_array = typename Arr::template transform_t_array<make_unsigned>;
 
-            using filtred_ints_t = seq::sort_t_array_by_size<
-                    make_unique_size_array<seq::append_t<
-                    make_unsigned_array<native_ints_t>, extra_u_ints_t>>>;
-
-            using int_sizes_t = sizes_array<filtred_ints_t>;
-
-            template<size_t size, bool sig, signed_size_t = int_sizes_t::index_of(size)>
-            struct native_int_type_h;
-
-            template<size_t size, bool sig>
-            struct native_int_type_h<size, sig, -1 > {
-            };
-
-            template<size_t size, signed_size_t index>
-            struct native_int_type_h<size, false, index> {
-                using type = make_unsigned<typename filtred_ints_t::template get<index>>;
-            };
-
-            template<size_t size, signed_size_t index>
-            struct native_int_type_h<size, true, index> {
-                using type = make_signed<typename filtred_ints_t::template get<index>>;
-            };
-
-            template<size_t size, bool sig>
-            using native_int_type = typename native_int_type_h<size, sig>::type;
-
             template<typename T, typename UT = make_unsigned<T>>
             constexpr inline size_t get_bits() {
                 UT test = ~UT(0);
@@ -569,6 +543,10 @@ namespace JIO {
                 }
                 return out;
             }
+
+            using filtred_ints_t = seq::sort_t_array_by_size<
+                    make_unique_size_array<seq::append_t<
+                    make_unsigned_array<native_ints_t>, extra_u_ints_t>>>;
 
             using min_native_t = filtred_ints_t::get<0>;
             using max_native_t = filtred_ints_t::get<filtred_ints_t::length - 1 >;
@@ -591,6 +569,35 @@ namespace JIO {
             }
 
             static_assert(check_bits(seq::make_index_seq<0, filtred_ints_t::length>()), "check_bits failed");
+
+            template<size_t bytes>
+            using byte_to_bits = std::integral_constant<size_t, bytes * min_native_bits>;
+
+            template<typename Arr>
+            using bytes_to_bits = typename Arr::template transform_c_array_auto<size_t, byte_to_bits>;
+
+            using int_sizes_t = sizes_array<filtred_ints_t>;
+            using int_bits_t = bytes_to_bits<int_sizes_t>;
+
+            template<size_t size, bool sig, signed_size_t = int_sizes_t::index_of(size)>
+            struct native_int_type_h;
+
+            template<size_t size, bool sig>
+            struct native_int_type_h<size, sig, -1 > {
+            };
+
+            template<size_t size, signed_size_t index>
+            struct native_int_type_h<size, false, index> {
+                using type = make_unsigned<typename filtred_ints_t::template get<index>>;
+            };
+
+            template<size_t size, signed_size_t index>
+            struct native_int_type_h<size, true, index> {
+                using type = make_signed<typename filtred_ints_t::template get<index>>;
+            };
+
+            template<size_t size, bool sig>
+            using native_int_type = typename native_int_type_h<size, sig>::type;
         }
 
         namespace utils {
