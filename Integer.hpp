@@ -590,6 +590,12 @@ namespace JIO {
 
             template<size_t bits, bool sig>
             using int_of_bits = int_of_index<int_bits_t::index_of(bits), sig>;
+
+            template<typename T, typename U = make_unsigned<T>>
+            constexpr inline bool is_pow2(T value) {
+                U tmp = value;
+                return tmp & (tmp - 1);
+            }
         }
 
         namespace utils {
@@ -610,6 +616,22 @@ namespace JIO {
                 auto index = digits.index_of(c);
                 return index < 36 ? index : index - 26;
             }
+        }
+
+        enum struct IKind {
+            illegal = 0, native, pow2, array
+        };
+
+        constexpr inline IKind i_kind(size_t size) noexcept {
+            if (!size) {
+                return IKind::illegal;
+            }
+            if (type_traits::int_sizes_t::index_of(size) != -1) {
+                return IKind::native;
+            }
+            return (size % type_traits::max_native_size == 0) &&
+                    type_traits::is_pow2(size / type_traits::max_native_size) ?
+                    IKind::pow2 : IKind::array;
         }
     }
 }
