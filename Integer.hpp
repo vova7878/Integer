@@ -579,25 +579,14 @@ namespace JIO {
             using int_sizes_t = sizes_array<filtred_ints_t>;
             using int_bits_t = bytes_to_bits<int_sizes_t>;
 
-            template<size_t size, bool sig, signed_size_t = int_sizes_t::index_of(size)>
-            struct native_int_type_h;
+            template<size_t index, bool sig, typename I = typename filtred_ints_t::template get<index>>
+            using int_of_index = std::conditional_t<sig, make_signed<I>, make_unsigned<I>>;
 
             template<size_t size, bool sig>
-            struct native_int_type_h<size, sig, -1 > {
-            };
+            using int_of_size = int_of_index<int_sizes_t::index_of(size), sig>;
 
-            template<size_t size, signed_size_t index>
-            struct native_int_type_h<size, false, index> {
-                using type = make_unsigned<typename filtred_ints_t::template get<index>>;
-            };
-
-            template<size_t size, signed_size_t index>
-            struct native_int_type_h<size, true, index> {
-                using type = make_signed<typename filtred_ints_t::template get<index>>;
-            };
-
-            template<size_t size, bool sig>
-            using native_int_type = typename native_int_type_h<size, sig>::type;
+            template<size_t bits, bool sig>
+            using int_of_bits = int_of_index<int_bits_t::index_of(bits), sig>;
         }
 
         namespace utils {
