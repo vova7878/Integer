@@ -459,6 +459,9 @@ namespace JIO {
             template<typename Arr>
             using make_unique_size_array = seq::conditional_array<Arr, is_unique_size_array<Arr>>;
 
+            template<typename T, size_t length>
+            using array_ref = T(&)[length];
+
             template<typename T, bool c, typename TT = micro_std::remove_const_t<T>>
             using add_const = std::conditional_t<c, micro_std::add_const_t<TT>, TT>;
 
