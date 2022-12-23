@@ -28,9 +28,13 @@
 
 #if __has_include(<ostream>)
 #include <ostream>
-#define INTEGER_HPP_HAS_OSTREAM 1
+#define INTEGER_HPP_HAS_OSTREAM
+#endif
+
+#ifdef __has_builtin
+#define INTEGER_HPP_HAS_BUILTIN_CHECK 
 #else
-#define INTEGER_HPP_HAS_OSTREAM 0
+#define __has_builtin(unused) 0
 #endif
 
 // -std=c++17
@@ -638,4 +642,13 @@ namespace JIO {
         }
     }
 }
+
+#undef INTEGER_HPP_HAS_OSTREAM
+
+#ifndef INTEGER_HPP_HAS_BUILTIN_CHECK
+#undef __has_builtin
+#else
+#undef INTEGER_HPP_HAS_BUILTIN_CHECK
+#endif
+
 #endif /* INTEGER_HPP */
