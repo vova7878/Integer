@@ -613,6 +613,26 @@ namespace JIO {
 
             static_assert(check_bits(seq::make_index_seq<0, filtred_ints_t::length>()), "check_bits failed");
         }
+
+        namespace utils {
+
+            constexpr inline seq::v_array<char, 62> digits = {
+                //10
+                '0', '1', '2', '3', '4',
+                '5', '6', '7', '8', '9',
+                //26
+                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'g', 'k', 'l', 'm',
+                'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                //26
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'G', 'K', 'L', 'M',
+                'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+            };
+
+            constexpr inline size_t digit_to_number(char c) noexcept {
+                auto index = digits.index_of(c);
+                return index < 36 ? index : index - 26;
+            }
+        }
     }
 }
 #endif /* INTEGER_HPP */
