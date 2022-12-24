@@ -237,6 +237,13 @@ namespace JIO {
 
                 template<T value>
                 using index_of_constant = std::integral_constant<size_t, index_of(value)>;
+
+                constexpr inline static bool contains(T value) noexcept {
+                    return index_of(value) != -1;
+                }
+
+                template<T value>
+                using contains_constant = std::bool_constant<contains(value)>;
             };
 
             template <size_t... values>
@@ -263,6 +270,10 @@ namespace JIO {
                         }
                     }
                     return -1;
+                }
+
+                constexpr inline bool contains(T value) const noexcept {
+                    return index_of(value) != -1;
                 }
             };
 
@@ -640,8 +651,7 @@ namespace JIO {
                     return __builtin_popcountll(value);
                 } else
 #endif
-                    if constexpr ((get_bits<U>() == 128) &&
-                        (int_bits_t::index_of(64) != -1)) {
+                    if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
                     using u64 = int_of_bits<64, false>;
                     return popcount<u64>(value) + popcount<u64>(value >> 64);
                 } else if constexpr (get_bits<U>() == 64) {
@@ -679,7 +689,7 @@ namespace JIO {
                 if (!size) {
                     return IKind::illegal;
                 }
-                if (type_traits::int_sizes_t::index_of(size) != -1) {
+                if (type_traits::int_sizes_t::contains(size)) {
                     return IKind::native;
                 }
                 return (size % type_traits::max_native_size == 0) &&
