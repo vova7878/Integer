@@ -700,6 +700,9 @@ namespace JIO {
                     return popcount<unsigned long>(value);
                 } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
                     return popcount<unsigned long long>(value);
+                } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
+                    using u128 = int_of_bits<128, false>;
+                    return popcount<u128>(value);
                 } else {
                     int out = 0;
                     while (value) {
