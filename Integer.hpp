@@ -207,20 +207,20 @@ namespace JIO {
                 template<template<typename P, P...> typename X>
                 using transform_all = X<T, values...>;
 
-                template<template<decltype(auto)...> typename X>
+                template<template<auto...> typename X>
                 using transform_all_auto = X<values...>;
 
                 template<typename V, template<typename P, P> typename X>
-                using transform_c_array = c_array<V, X<T, values>::value...>;
+                using transform_c = c_array<V, X<T, values>::value...>;
 
-                template<typename V, template<decltype(auto)> typename X>
-                using transform_c_array_auto = c_array<V, X<values>::value...>;
+                template<typename V, template<auto> typename X>
+                using transform_c_auto = c_array<V, X<values>::value...>;
 
                 template<template<typename P, P> typename X>
-                using transform_t_array = t_array<X<T, values>...>;
+                using transform_t = t_array<X<T, values>...>;
 
-                template<template<decltype(auto)> typename X>
-                using transform_t_array_auto = t_array<X<values>...>;
+                template<template<auto> typename X>
+                using transform_t_auto = t_array<X<values>...>;
 
                 constexpr T operator[](size_t index) const noexcept {
                     return get(index);
@@ -245,6 +245,24 @@ namespace JIO {
                 template<T value>
                 using contains_constant = std::bool_constant<contains(value)>;
             };
+
+            template<typename Arr, template<typename P, P...> typename X>
+            using c_transform_all = typename Arr::template transform_all<X>;
+
+            template<typename Arr, template<auto...> typename X>
+            using c_transform_all_auto = typename Arr::template transform_all_auto<X>;
+
+            template<typename Arr, typename V, template<typename P, P> typename X>
+            using c_transform_c = typename Arr::template transform_c<V, X>;
+
+            template<typename Arr, typename V, template<auto> typename X>
+            using c_transform_c_auto = typename Arr::template transform_c_auto<V, X>;
+
+            template<typename Arr, template<typename P, P> typename X>
+            using c_transform_t = typename Arr::template transform_t<X>;
+
+            template<typename Arr, template<auto> typename X>
+            using c_transform_t_auto = typename Arr::template transform_t_auto<X>;
 
             template <size_t... values>
             using index_seq = c_array<size_t, values...>;
@@ -300,9 +318,6 @@ namespace JIO {
             template<size_t low, size_t high>
             using make_index_seq = make_seq<size_t, low, high>;
 
-            template<template<size_t> typename T, size_t low, size_t high>
-            using t_array_by_index = typename make_index_seq<low, high>::template transform_t_array_auto<T>;
-
             template<size_t... seq>
             struct pack_element_h {
 
@@ -315,8 +330,7 @@ namespace JIO {
 
             template<size_t index, typename... Tp>
             constexpr inline decltype(auto) pack_element(Tp&&... arr) noexcept {
-                using ct = typename make_index_seq<0, index>::
-                        template transform_all_auto<pack_element_h>;
+                using ct = c_transform_all_auto<make_index_seq<0, index>, pack_element_h>;
                 return ct::helper(micro_std::forward<Tp>(arr)...);
             }
 
@@ -346,11 +360,20 @@ namespace JIO {
                 using transform_all = X<Tp...>;
 
                 template<typename V, template<typename> typename X>
-                using transform_c_array = c_array<V, X<Tp>::value...>;
+                using transform_c = c_array<V, X<Tp>::value...>;
 
                 template<template<typename> typename X>
-                using transform_t_array = t_array<X<Tp>...>;
+                using transform_t = t_array<X<Tp>...>;
             };
+
+            template<typename Arr, template<typename...> typename X>
+            using t_transform_all = typename Arr::template transform_all<X>;
+
+            template<typename Arr, typename V, template<typename> typename X>
+            using t_transform_c = typename Arr::template transform_c<V, X>;
+
+            template<typename Arr, template<typename> typename X>
+            using t_transform_t = typename Arr::template transform_t<X>;
 
             template <typename T1, typename T2>
             using t_pair = t_array<T1, T2>;
@@ -399,20 +422,24 @@ namespace JIO {
             };
 
             template<typename Arr>
-            using index_in_sorted_array = typename make_index_seq<0, Arr::length>::
-            template transform_c_array_auto<size_t, index_in_sorted_array_h<Arr>::template impl_t>;
+            using index_in_sorted_array = c_transform_c_auto<
+            make_index_seq<0, Arr::length>, size_t,
+            index_in_sorted_array_h<Arr>::template impl_t>;
 
             template<typename Arr>
-            using index_to_sort_array = typename make_index_seq<0, Arr::length>::template
-            transform_c_array_auto<size_t, index_in_sorted_array<Arr>::template index_of_constant>;
+            using index_to_sort_array = c_transform_c_auto<
+            make_index_seq<0, Arr::length>, size_t,
+            index_in_sorted_array<Arr>::template index_of_constant>;
 
             template<typename Arr>
-            using sort_c_array = typename index_to_sort_array<Arr>::template
-            transform_c_array_auto<typename Arr::value_type, Arr::template get_constant>;
+            using sort_c_array = c_transform_c_auto<
+            index_to_sort_array<Arr>,
+            typename Arr::value_type, Arr::template get_constant>;
 
-            template<typename Arr, typename X, template<typename> typename V>
-            using sort_t_array = typename index_to_sort_array<typename Arr::template transform_c_array<X, V>>::template
-            transform_t_array_auto<Arr::template get>;
+            template<typename Arr, typename V, template<typename> typename X>
+            using sort_t_array = c_transform_t_auto<
+            index_to_sort_array<t_transform_c<Arr, V, X>>,
+            Arr::template get>;
 
             template<typename Arr>
             using sort_t_array_by_size = sort_t_array<Arr, size_t, size_of>;
@@ -440,8 +467,12 @@ namespace JIO {
             using extra_u_int_by_index_t =
             typename extra_su_int_pair_by_index_t<index>::template get<1>;
 
-            using extra_s_ints_t = seq::t_array_by_index<extra_s_int_by_index_t, 0, extra_su_int_pairs_t::length>;
-            using extra_u_ints_t = seq::t_array_by_index<extra_u_int_by_index_t, 0, extra_su_int_pairs_t::length>;
+            using extra_s_ints_t = seq::c_transform_t_auto<
+                    seq::make_index_seq<0, extra_su_int_pairs_t::length>,
+                    extra_s_int_by_index_t>;
+            using extra_u_ints_t = seq::c_transform_t_auto<
+                    seq::make_index_seq<0, extra_su_int_pairs_t::length>,
+                    extra_u_int_by_index_t>;
 
             template<typename Arr>
             struct is_unique_h {
@@ -462,11 +493,12 @@ namespace JIO {
             };
 
             template<typename Arr>
-            using is_unique_array = typename seq::make_index_seq<0, Arr::length>::
-            template transform_c_array_auto<bool, is_unique_h<Arr>::template impl_t>;
+            using is_unique_array = seq::c_transform_c_auto<
+            seq::make_index_seq<0, Arr::length>, bool,
+            is_unique_h<Arr>::template impl_t>;
 
             template<typename Arr>
-            using sizes_array = typename Arr::template transform_c_array<size_t, size_of>;
+            using sizes_array = seq::t_transform_c<Arr, size_t, size_of>;
 
             template<typename Arr>
             using is_unique_size_array = is_unique_array<sizes_array<Arr>>;
@@ -546,10 +578,10 @@ namespace JIO {
             using make_unsigned = typename decltype(make_unsigned_h<T>())::type;
 
             template<typename Arr>
-            using make_signed_array = typename Arr::template transform_t_array<make_signed>;
+            using make_signed_array = seq::t_transform_t<Arr, make_signed>;
 
             template<typename Arr>
-            using make_unsigned_array = typename Arr::template transform_t_array<make_unsigned>;
+            using make_unsigned_array = seq::t_transform_t<Arr, make_unsigned>;
 
             template<typename T, typename UT = make_unsigned<T>>
             constexpr inline size_t get_bits() {
@@ -592,7 +624,7 @@ namespace JIO {
             using byte_to_bits = std::integral_constant<size_t, bytes * min_native_bits>;
 
             template<typename Arr>
-            using bytes_to_bits = typename Arr::template transform_c_array_auto<size_t, byte_to_bits>;
+            using bytes_to_bits = seq::c_transform_c_auto<Arr, size_t, byte_to_bits>;
 
             using int_sizes_t = sizes_array<filtred_ints_t>;
             using int_bits_t = bytes_to_bits<int_sizes_t>;
