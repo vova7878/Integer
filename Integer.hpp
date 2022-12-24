@@ -32,7 +32,7 @@
 #endif
 
 #ifdef __has_builtin
-#define INTEGER_HPP_HAS_BUILTIN_CHECK 
+#define INTEGER_HPP_HAS_BUILTIN_CHECK
 #else
 #define __has_builtin(unused) 0
 #endif
@@ -619,6 +619,53 @@ namespace JIO {
             constexpr inline size_t digit_to_number(char c) noexcept {
                 auto index = digits.index_of(c);
                 return index < 36 ? index : index - 26;
+            }
+
+            template<typename T, typename U = type_traits::make_unsigned<T>>
+            constexpr inline int popcount(T tmp) noexcept {
+                using namespace type_traits;
+                U value = tmp;
+#if __has_builtin(__builtin_popcount)
+                if constexpr (sizeof (U) == sizeof (unsigned int)) {
+                    return __builtin_popcount(value);
+                } else
+#endif
+#if __has_builtin(__builtin_popcountl)
+                    if constexpr (sizeof (U) == sizeof (unsigned long)) {
+                    return __builtin_popcountl(value);
+                } else
+#endif
+#if __has_builtin(__builtin_popcountll)
+                    if constexpr (sizeof (U) == sizeof (unsigned long long)) {
+                    return __builtin_popcountll(value);
+                } else
+#endif
+                    if constexpr ((get_bits<U>() == 128) &&
+                        (int_bits_t::index_of(64) != -1)) {
+                    using u64 = int_of_bits<64, false>;
+                    return popcount<u64>(value) + popcount<u64>(value >> 64);
+                } else if constexpr (get_bits<U>() == 64) {
+                    value -= ((value >> 1) & 0x5555555555555555U);
+                    value = ((value >> 2) & 0x3333333333333333U) + (value & 0x3333333333333333U);
+                    return ((((value >> 4) + value) & 0xf0f0f0f0f0f0f0fU) * 0x101010101010101U) >> 56;
+                } else if constexpr (get_bits<U>() == 32) {
+                    value -= ((value >> 1) & 0x55555555U);
+                    value = ((value >> 2) & 0x33333333U) + (value & 0x33333333U);
+                    return ((((value >> 4) + value) & 0xf0f0f0fU) * 0x1010101U) >> 24;
+                } else if constexpr (get_bits<U>() < get_bits<unsigned int>()) {
+                    return popcount<unsigned int>(value);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned long>()) {
+                    return popcount<unsigned long>(value);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
+                    return popcount<unsigned long long>(value);
+                } else {
+                    int out = 0;
+                    while (value) {
+                        value = (value - 1) & value;
+                        out++;
+                    }
+                    return out;
+                }
             }
         }
 
