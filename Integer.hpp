@@ -46,7 +46,17 @@ namespace JIO {
         template<typename T>
         using size_of = std::integral_constant<size_t, sizeof (T)>;
 
-        // we don't want to use <utility>
+        template <typename, //it is necessary to trick the compiler
+        typename T>
+        constexpr inline T instantiation_context(T value) noexcept {
+            return value;
+        }
+
+        template <typename, //it is necessary to trick the compiler
+        typename T, T value>
+        constexpr inline T instantiation_context(std::integral_constant<T, value>) noexcept {
+            return value;
+        }
 
         namespace micro_std {
             template<typename T, typename TT = std::remove_reference_t<T>>
@@ -530,22 +540,16 @@ namespace JIO {
             template<typename T>
             using is_integral = micro_std::disjunction<is_native_int<T>, is_extra_int<T>>;
 
-            template <typename, //it is necessary to trick the compiler
-            typename T, T value>
-            constexpr inline auto unpack(std::integral_constant<T, value>) noexcept {
-                return value;
-            }
-
             template<typename T>
             constexpr inline auto make_signed_h() {
                 if constexpr (constexpr auto index = typename extra_s_ints_t::
                         template index_of<std::remove_cv_t < T >> (); index != -1) {
                     return seq::type_container<T> ();
                 } else if constexpr (constexpr auto index =
-                        unpack<T>(typename extra_u_ints_t::
-                        template index_of<std::remove_cv_t < T >> ()); index != -1) {
+                        typename extra_u_ints_t::
+                        template index_of<std::remove_cv_t < T >> (); index != -1) {
                     return seq::type_container < share_cv<typename extra_s_ints_t::
-                            template get < index >, T >> ();
+                            template get < instantiation_context<T>(index) >, T >> ();
                 } else if constexpr (is_native_int<T>()) {
                     return std::make_signed<T>();
                 }
@@ -560,10 +564,10 @@ namespace JIO {
                         template index_of<std::remove_cv_t < T >> (); index != -1) {
                     return seq::type_container<T> ();
                 } else if constexpr (constexpr auto index =
-                        unpack<T>(typename extra_s_ints_t::
-                        template index_of<std::remove_cv_t < T >> ()); index != -1) {
+                        typename extra_s_ints_t::
+                        template index_of<std::remove_cv_t < T >> (); index != -1) {
                     return seq::type_container < share_cv<typename extra_u_ints_t::
-                            template get < index >, T >> ();
+                            template get < instantiation_context<T>(index) >, T >> ();
                 } else if constexpr (is_native_int<T>()) {
                     return std::make_unsigned<T>();
                 }
@@ -696,7 +700,7 @@ namespace JIO {
                 } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
                     return popcount<unsigned long long>(value);
                 } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
-                    using u128 = int_of_bits<128, false>;
+                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
                     return popcount<u128>(value);
                 } else {
                     int out = 0;
