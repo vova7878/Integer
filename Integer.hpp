@@ -683,7 +683,7 @@ namespace JIO {
                 } else
 #endif
                     if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
-                    using u64 = int_of_bits<64, false>;
+                    using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     return popcount<u64>(value) + popcount<u64>(value >> 64);
                 } else if constexpr (get_bits<U>() == 64) {
                     value -= ((value >> 1) & 0x5555555555555555U);
@@ -759,7 +759,7 @@ namespace JIO {
                 } else
 #endif
                     if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
-                    using u64 = int_of_bits<64, false>;
+                    using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     u64 high = value >> 64;
                     return high == 0 ? 64 + clz<u64>(value) : clz<u64>(high);
                 } else {
@@ -788,7 +788,7 @@ namespace JIO {
                 } else
 #endif
                     if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
-                    using u64 = int_of_bits<64, false>;
+                    using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     u64 low = value;
                     return low == 0 ? 64 + ctz<u64>(value >> 64) : ctz<u64>(low);
                 } else {
