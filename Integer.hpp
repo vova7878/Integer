@@ -712,12 +712,6 @@ namespace JIO {
                 }
             }
 
-            template<typename T, typename U = type_traits::make_unsigned<T>>
-            constexpr inline int ctz(T tmp) noexcept {
-                U value = tmp;
-                return popcount<U>(U(value & U(-value)) - U(1));
-            }
-
             constexpr inline size_t lpo2_s(size_t value) noexcept {
                 size_t i = 0;
                 size_t p = 1;
@@ -744,9 +738,62 @@ namespace JIO {
                 return next_pow2_sub1_h<U>(value, sh_array < type_traits::get_bits<T>()>());
             }
 
-            template<typename T, typename U = type_traits::make_unsigned<T>>
+            template<typename T, typename U = type_traits::make_unsigned<T>,
+            size_t bits = type_traits::get_bits<T>()>
             constexpr inline int clz(T tmp) noexcept {
-                return type_traits::get_bits<T>() - popcount<U>(next_pow2_sub1<U>(tmp));
+                using namespace type_traits;
+                U value = tmp;
+#if __has_builtin(__builtin_clz)
+                if constexpr (sizeof (U) == sizeof (unsigned int)) {
+                    return value == 0 ? bits : __builtin_clz(value);
+                } else
+#endif
+#if __has_builtin(__builtin_clzl)
+                    if constexpr (sizeof (U) == sizeof (unsigned long)) {
+                    return value == 0 ? bits : __builtin_clzl(value);
+                } else
+#endif
+#if __has_builtin(__builtin_clzll)
+                    if constexpr (sizeof (U) == sizeof (unsigned long long)) {
+                    return value == 0 ? bits : __builtin_clzll(value);
+                } else
+#endif
+                    if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
+                    using u64 = int_of_bits<64, false>;
+                    u64 high = value >> 64;
+                    return high == 0 ? 64 + clz<u64>(value) : clz<u64>(high);
+                } else {
+                    return bits - popcount<U>(next_pow2_sub1<U>(value));
+                }
+            }
+
+            template<typename T, typename U = type_traits::make_unsigned<T>,
+            size_t bits = type_traits::get_bits<T>()>
+            constexpr inline int ctz(T tmp) noexcept {
+                using namespace type_traits;
+                U value = tmp;
+#if __has_builtin(__builtin_ctz)
+                if constexpr (sizeof (U) == sizeof (unsigned int)) {
+                    return value == 0 ? bits : __builtin_ctz(value);
+                } else
+#endif
+#if __has_builtin(__builtin_ctzl)
+                    if constexpr (sizeof (U) == sizeof (unsigned long)) {
+                    return value == 0 ? bits : __builtin_ctzl(value);
+                } else
+#endif
+#if __has_builtin(__builtin_ctzll)
+                    if constexpr (sizeof (U) == sizeof (unsigned long long)) {
+                    return value == 0 ? bits : __builtin_ctzll(value);
+                } else
+#endif
+                    if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
+                    using u64 = int_of_bits<64, false>;
+                    u64 low = value;
+                    return low == 0 ? 64 + ctz<u64>(value >> 64) : ctz<u64>(low);
+                } else {
+                    return popcount<U>(U(value & U(-value)) - U(1));
+                }
             }
         }
 
