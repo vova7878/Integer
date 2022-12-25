@@ -762,6 +762,15 @@ namespace JIO {
                     using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     u64 high = value >> 64;
                     return high == 0 ? 64 + clz<u64>(value) : clz<u64>(high);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned int>()) {
+                    return clz<unsigned int>(value);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned long>()) {
+                    return clz<unsigned long>(value);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
+                    return clz<unsigned long long>(value);
+                } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
+                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
+                    return clz<u128>(value);
                 } else {
                     return bits - popcount<U>(next_pow2_sub1<U>(value));
                 }
@@ -791,6 +800,15 @@ namespace JIO {
                     using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     u64 low = value;
                     return low == 0 ? 64 + ctz<u64>(value >> 64) : ctz<u64>(low);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned int>()) {
+                    return ctz<unsigned int>(value);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned long>()) {
+                    return ctz<unsigned long>(value);
+                } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
+                    return ctz<unsigned long long>(value);
+                } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
+                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
+                    return ctz<u128>(value);
                 } else {
                     return popcount<U>(U(value & U(-value)) - U(1));
                 }
