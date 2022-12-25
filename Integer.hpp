@@ -24,7 +24,6 @@
 #define INTEGER_HPP
 
 #include <type_traits>
-#include <initializer_list>
 
 #if __has_include(<ostream>)
 #include <ostream>
@@ -161,18 +160,14 @@ namespace JIO {
 
         namespace seq {
 
-            struct unused {
+            struct ignore_t {
 
                 template <typename T>
-                constexpr unused(T&&) noexcept { }
+                constexpr ignore_t(T&&) noexcept { }
             };
 
-            using ignore_t = unused;
-
-            template<size_t>
-            using ignore_index_t = ignore_t;
-
-            constexpr inline std::initializer_list<ignore_t> ignore_list;
+            template<auto>
+            using ignore_template_t = ignore_t;
 
             template <typename...>
             struct t_array;
@@ -323,7 +318,7 @@ namespace JIO {
 
                 template <typename T, typename... O>
                 constexpr static decltype(auto) helper(
-                        ignore_index_t<seq>..., T&& out, O&&...) noexcept {
+                        ignore_template_t<seq>..., T&& out, O&&...) noexcept {
                     return micro_std::forward<decltype(out)>(out);
                 }
             };
