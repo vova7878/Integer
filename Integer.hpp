@@ -172,8 +172,8 @@ namespace JIO {
 
             struct ignore_t {
 
-                template <typename T>
-                constexpr ignore_t(T&&) noexcept { }
+                template <typename... T>
+                constexpr ignore_t(T&&...) noexcept { }
             };
 
             template<auto>
@@ -716,6 +716,37 @@ namespace JIO {
             constexpr inline int ctz(T tmp) noexcept {
                 U value = tmp;
                 return popcount<U>(U(value & U(-value)) - U(1));
+            }
+
+            constexpr inline size_t lpo2_s(size_t value) noexcept {
+                size_t i = 0;
+                size_t p = 1;
+                for (; p < value && i < type_traits::get_bits<size_t>(); i++) {
+                    p <<= 1;
+                }
+                return i - 1;
+            }
+
+            template<size_t shr>
+            using shr_one = std::integral_constant<size_t, size_t(1) << shr>;
+
+            template<size_t bits, typename Arr = seq::c_transform_c_auto<seq::make_index_seq < 0, lpo2_s(bits)>, size_t, shr_one>>
+            using sh_array = seq::append_t<Arr, seq::index_seq<bits - 2U * Arr::get(Arr::length - 1U)>>;
+
+            template<typename T, size_t... sh>
+            constexpr inline T next_pow2_sub1_h(T value, seq::index_seq<sh...>) noexcept {
+                seq::ignore_t{(value |= (value >> sh))...};
+                return value;
+            }
+
+            template<typename T, typename U = type_traits::make_unsigned<T>>
+            constexpr inline T next_pow2_sub1(T value) noexcept {
+                return next_pow2_sub1_h<U>(value, sh_array < type_traits::get_bits<T>()>());
+            }
+
+            template<typename T, typename U = type_traits::make_unsigned<T>>
+            constexpr inline int clz(T tmp) noexcept {
+                return type_traits::get_bits<T>() - popcount<U>(next_pow2_sub1<U>(tmp));
             }
         }
 
