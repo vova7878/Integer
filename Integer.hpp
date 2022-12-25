@@ -707,6 +707,12 @@ namespace JIO {
                     return out;
                 }
             }
+
+            template<typename T, typename U = type_traits::make_unsigned<T>>
+            constexpr inline int ctz(T tmp) noexcept {
+                U value = tmp;
+                return popcount<U>(U(value & U(-value) - U(1)));
+            }
         }
 
         namespace impl {
