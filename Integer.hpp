@@ -646,6 +646,9 @@ namespace JIO {
 
         namespace utils {
 
+            template<size_t size>
+            using sh_type = size_t;
+
             constexpr inline seq::v_array<char, 62> digits = {
                 //10
                 '0', '1', '2', '3', '4',
@@ -852,7 +855,7 @@ namespace JIO {
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
-                using M = size_t; //typedef p_SHType<sizeof (U) > M;
+                using M = utils::sh_type<size>;
                 constexpr static M max_sh = size * type_traits::min_native_bits - 1;
                 U value;
 
