@@ -329,7 +329,7 @@ namespace JIO {
                 template <typename T, typename... O>
                 constexpr static decltype(auto) helper(
                         ignore_template_t<seq>..., T&& out, O&&...) noexcept {
-                    return micro_std::forward<decltype(out)>(out);
+                    return micro_std::forward<T>(out);
                 }
             };
 
