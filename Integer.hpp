@@ -943,10 +943,10 @@ namespace JIO {
 
             template<size_t size, bool sig, bool le>
             struct native_integer_impl : public native_integer_base<size, sig, le> {
-                using B = native_integer_base<size, sig, le>;
-                using I = native_integer_impl<size, sig, le>;
+                using I = native_integer_impl;
                 using UI = native_integer_impl<size, false, le>;
                 using SI = native_integer_impl<size, true, le>;
+                using B = native_integer_base<size, sig, le>;
                 using U = typename B::U;
                 using S = typename B::S;
                 using M = typename B::M;
