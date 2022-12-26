@@ -817,23 +817,328 @@ namespace JIO {
 
         namespace impl {
 
-            enum struct IKind {
+            enum IKind {
                 illegal = 0, native, pow2, array
             };
 
             constexpr inline IKind i_kind(size_t size) noexcept {
                 if (!size) {
-                    return IKind::illegal;
+                    return illegal;
                 }
                 if (type_traits::int_sizes_t::contains(size)) {
-                    return IKind::native;
+                    return native;
                 }
                 return (size % type_traits::max_native_size == 0) &&
                         type_traits::is_pow2(size / type_traits::max_native_size) ?
-                        IKind::pow2 : IKind::array;
+                        pow2 : array;
             }
+
+            template<size_t size, bool sig, bool le, IKind = i_kind(size)>
+            struct integer_impl;
+
+            template<size_t size, bool sig, bool le>
+            struct native_integer_base;
+
+            template<size_t size, bool sig, bool le>
+            struct native_integer_impl;
+
+            template<size_t size, bool sig, bool le>
+            struct integer_impl <size, sig, le, native> {
+                using type = native_integer_impl<size, sig, le>;
+            };
+
+            template<size_t size, bool le>
+            struct native_integer_base<size, false, le> {
+                using S = type_traits::int_of_size<size, true>;
+                using U = type_traits::int_of_size<size, false>;
+                using I = native_integer_base;
+                using M = size_t; //typedef p_SHType<sizeof (U) > M;
+                constexpr static M max_sh = size * type_traits::min_native_bits - 1;
+                U value;
+
+                constexpr native_integer_base() noexcept = default;
+
+                constexpr explicit native_integer_base(U n) noexcept : value(n) { }
+
+                constexpr bool is_negative() const noexcept {
+                    return false;
+                }
+
+                constexpr static bool increment_overflow(I &out) noexcept {
+                    return !(++out.value);
+                }
+
+                constexpr static bool decrement_overflow(I &out) noexcept {
+                    return !(out.value--);
+                }
+
+                constexpr static bool increment_carry(I &out, bool cf) noexcept {
+                    return (out.value += 1 + cf) <= cf;
+                }
+
+                constexpr static bool decrement_carry(I &out, bool cf) noexcept {
+                    bool tmp = out.value <= cf;
+                    out.value -= 1 + cf;
+                    return tmp;
+                }
+
+                constexpr static bool add_overflow(I v1, I v2, I &out) noexcept {
+                    return (out.value = v1.value + v2.value) < v1.value;
+                }
+
+                constexpr static bool sub_overflow(I v1, I v2, I &out) noexcept {
+                    return (out.value = v1.value - v2.value) > v1.value;
+                }
+
+                constexpr static bool
+                add_carry(I v1, I v2, bool cf, I &out) noexcept {
+                    bool tmp = add_overflow(v1, v2, out);
+                    return add_overflow(out, I(cf), out) | tmp;
+                }
+
+                constexpr static bool
+                sub_carry(I v1, I v2, bool cf, I &out) noexcept {
+                    bool tmp = sub_overflow(v1, v2, out);
+                    return sub_overflow(out, I(cf), out) | tmp;
+                }
+
+                constexpr static bool
+                add_zero_carry(I v1, bool cf, I &out) noexcept {
+                    return add_overflow(v1, I(cf), out);
+                }
+
+                constexpr static bool
+                sub_zero_carry(I v1, bool cf, I &out) noexcept {
+                    return sub_overflow(v1, I(cf), out);
+                }
+
+                constexpr I operator/(I other) const noexcept {
+                    return I(value / other.value);
+                }
+
+                constexpr I operator%(I other) const noexcept {
+                    return I(value % other.value);
+                }
+
+                constexpr I operator>>(M other) const noexcept {
+                    return I(other > max_sh ? 0 : value >> other);
+                }
+
+                constexpr bool operator>(I other) const noexcept {
+                    return value > other.value;
+                }
+
+                constexpr bool operator<(I other) const noexcept {
+                    return value < other.value;
+                }
+
+                constexpr bool operator>=(I other) const noexcept {
+                    return value >= other.value;
+                }
+
+                constexpr bool operator<=(I other) const noexcept {
+                    return value <= other.value;
+                }
+            };
+
+            template<size_t size, bool sig, bool le>
+            struct native_integer_impl : public native_integer_base<size, sig, le> {
+                using B = native_integer_base<size, sig, le>;
+                using I = native_integer_impl<size, sig, le>;
+                using UI = native_integer_impl<size, false, le>;
+                using SI = native_integer_impl<size, true, le>;
+                using U = typename B::U;
+                using S = typename B::S;
+                using M = typename B::M;
+
+                using B::B;
+                using B::value;
+
+                constexpr native_integer_impl() noexcept = default;
+
+                constexpr native_integer_impl(B obj) noexcept : B(obj) { }
+
+                constexpr static I ZERO() noexcept {
+                    return B(0);
+                }
+
+                constexpr bool is_zero() const noexcept {
+                    return value == 0;
+                }
+
+                constexpr bool upper_bit() const noexcept {
+                    return value >> (size * type_traits::min_native_bits - 1);
+                }
+
+                constexpr I add_one() const noexcept {
+                    return I(value + 1);
+                }
+
+                constexpr I sub_one() const noexcept {
+                    return I(value - 1);
+                }
+
+                template<size_t index>
+                constexpr type_traits::min_native_t getByte() const noexcept {
+                    return value >> (index * type_traits::min_native_bits);
+                }
+
+                template<size_t index, U mask = ~(U(type_traits::min_native_t(~0U)) <<
+                        (index * type_traits::min_native_bits))>
+                constexpr void setByte(type_traits::min_native_t v) noexcept {
+                    value = (value & mask) | (U(v) << (index * type_traits::min_native_bits));
+                }
+
+                template<size_t index, U mask = U(1) << index>
+                constexpr bool getBit() const noexcept {
+                    return value & mask;
+                }
+
+                template<size_t index, U mask1 = U(1) << index, U mask2 = ~mask1>
+                constexpr void setBit(bool v) noexcept {
+                    value = v ? (value | mask1) : (value & mask2);
+                }
+
+                constexpr static bool increment_overflow(I &out) noexcept {
+                    return B::increment_overflow(out);
+                }
+
+                constexpr static bool decrement_overflow(I &out) noexcept {
+                    return B::decrement_overflow(out);
+                }
+
+                constexpr static bool
+                increment_carry(I &out, bool cf) noexcept {
+                    return B::increment_carry(out, cf);
+                }
+
+                constexpr static bool
+                decrement_carry(I &out, bool cf) noexcept {
+                    return B::decrement_carry(out, cf);
+                }
+
+                constexpr static bool
+                add_overflow(I v1, I v2, I &out) noexcept {
+                    return B::add_overflow(v1, v2, out);
+                }
+
+                constexpr static bool
+                sub_overflow(I v1, I v2, I &out) noexcept {
+                    return B::sub_overflow(v1, v2, out);
+                }
+
+                constexpr static bool
+                add_carry(I v1, I v2, bool cf, I &out) noexcept {
+                    return B::add_carry(v1, v2, cf, out);
+                }
+
+                constexpr static bool
+                sub_carry(I v1, I v2, bool cf, I &out) noexcept {
+                    return B::sub_carry(v1, v2, cf, out);
+                }
+
+                constexpr static bool
+                add_zero_carry(I v1, bool cf, I &out) noexcept {
+                    return B::add_zero_carry(v1, cf, out);
+                }
+
+                constexpr static bool
+                sub_zero_carry(I v1, bool cf, I &out) noexcept {
+                    return B::sub_zero_carry(v1, cf, out);
+                }
+
+                constexpr static bool
+                left_shift_one_bit(I &out, bool bit) noexcept {
+                    bool tmp = out.upper_bit();
+                    out.value = (out.value << 1) | U(bit);
+                    return tmp;
+                }
+
+                constexpr size_t clz() const noexcept {
+                    return utils::clz(value);
+                }
+
+                constexpr size_t ctz() const noexcept {
+                    return utils::ctz(value);
+                }
+
+                constexpr I operator+() const noexcept {
+                    return *this;
+                }
+
+                constexpr I operator-() const noexcept {
+                    return I(-value);
+                }
+
+                constexpr I operator+(I other) const noexcept {
+                    return I(value + other.value);
+                }
+
+                constexpr I operator-(I other) const noexcept {
+                    return I(value - other.value);
+                }
+
+                constexpr I operator*(I other) const noexcept {
+                    return I(value * other.value);
+                }
+
+                constexpr I operator/(I other) const noexcept {
+                    return I(this->B::operator/(other));
+                }
+
+                constexpr I operator|(I other) const noexcept {
+                    return I(value | other.value);
+                }
+
+                constexpr I operator&(I other) const noexcept {
+                    return I(value & other.value);
+                }
+
+                constexpr I operator^(I other) const noexcept {
+                    return I(value ^ other.value);
+                }
+
+                constexpr I operator<<(M other) const noexcept {
+                    return I(other > B::max_sh ? 0 : value >> other);
+                }
+
+                constexpr I operator>>(M other) const noexcept {
+                    return I(this->B::operator>>(other));
+                }
+
+                constexpr I operator~() const noexcept {
+                    return I(~value);
+                }
+
+                constexpr bool operator==(I other) const noexcept {
+                    return value == other.value;
+                }
+
+                constexpr bool operator!=(I other) const noexcept {
+                    return value != other.value;
+                }
+
+                constexpr bool operator>(I other) const noexcept {
+                    return this->B::operator>(other);
+                }
+
+                constexpr bool operator<(I other) const noexcept {
+                    return this->B::operator<(other);
+                }
+
+                constexpr bool operator>=(I other) const noexcept {
+                    return this->B::operator>=(other);
+                }
+
+                constexpr bool operator<=(I other) const noexcept {
+                    return this->B::operator<=(other);
+                }
+            };
         }
     }
+
+    template<size_t size, bool sig, bool le = true >
+    class integer;
 }
 
 #undef INTEGER_HPP_HAS_OSTREAM
