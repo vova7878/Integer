@@ -946,6 +946,54 @@ namespace JIO {
                 }
             };
 
+            template<size_t size, bool le>
+            struct native_integer_base<size, true, le> {
+                using S = type_traits::int_of_size<size, true>;
+                using U = type_traits::int_of_size<size, false>;
+                using I = native_integer_base;
+                using M = utils::sh_type<size>;
+                constexpr static M max_sh = size * type_traits::min_native_bits - 1;
+                U value;
+
+                constexpr native_integer_base() noexcept = default;
+
+                constexpr explicit native_integer_base(U n) noexcept : value(n) { }
+
+                constexpr bool is_negative() const noexcept {
+                    return S(value) < 0;
+                }
+
+                constexpr I operator/(I other) const noexcept {
+                    //todo
+                    return I(S(value) / S(other.value));
+                }
+
+                constexpr I operator%(I other) const noexcept {
+                    //todo
+                    return I(S(value) % S(other.value));
+                }
+
+                constexpr I operator>>(M other) const noexcept {
+                    return I(S(value) >> (other > max_sh ? max_sh : other));
+                }
+
+                constexpr bool operator>(I other) const noexcept {
+                    return S(value) > S(other.value);
+                }
+
+                constexpr bool operator<(I other) const noexcept {
+                    return S(value) < S(other.value);
+                }
+
+                constexpr bool operator>=(I other) const noexcept {
+                    return S(value) >= S(other.value);
+                }
+
+                constexpr bool operator<=(I other) const noexcept {
+                    return S(value) <= S(other.value);
+                }
+            };
+
             template<size_t size, bool sig, bool le>
             struct native_integer_impl : public native_integer_base<size, sig, le> {
                 using I = native_integer_impl;
