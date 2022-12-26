@@ -895,12 +895,14 @@ namespace JIO {
 
                 constexpr static bool
                 add_carry(I v1, I v2, bool cf, I &out) noexcept {
+                    //todo
                     bool tmp = add_overflow(v1, v2, out);
                     return add_overflow(out, I(cf), out) | tmp;
                 }
 
                 constexpr static bool
                 sub_carry(I v1, I v2, bool cf, I &out) noexcept {
+                    //todo
                     bool tmp = sub_overflow(v1, v2, out);
                     return sub_overflow(out, I(cf), out) | tmp;
                 }
