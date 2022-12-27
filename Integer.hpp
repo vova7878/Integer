@@ -1152,7 +1152,7 @@ namespace JIO {
                 }
 
                 constexpr I operator<<(M other) const noexcept {
-                    return I(other > B::max_sh ? 0 : value >> other);
+                    return I(other > B::max_sh ? 0 : value << other);
                 }
 
                 constexpr I operator>>(M other) const noexcept {
