@@ -708,7 +708,7 @@ namespace JIO {
                 } else {
                     int out = 0;
                     while (value) {
-                        value = (value - 1) & value;
+                        value = U(value - 1) & value;
                         out++;
                     }
                     return out;
