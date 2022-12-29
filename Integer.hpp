@@ -451,6 +451,29 @@ namespace JIO {
 
             template<typename Arr>
             using sort_t_array_by_size = sort_t_array<Arr, size_t, size_of>;
+
+            template<typename data, typename LeavesArr>
+            struct t_tree {
+                using type = data;
+
+                template<typename Arr, size_t id = 0 >
+                constexpr static auto get_h() noexcept {
+                    if constexpr (Arr::length == id) {
+                        return type_container<type>();
+                    } else {
+                        return get_t<LeavesArr, Arr::get(id)>::template get_h<Arr, id + 1 > ();
+                    }
+                }
+
+                template<typename Arr>
+                using t_get = typename decltype(get_h<Arr>())::type;
+
+                template<size_t... arr>
+                using get = t_get<index_seq<arr...>>;
+            };
+
+            template<typename data, typename... Leaves>
+            using tree = t_tree<data, t_array<Leaves...>>;
         }
 
         namespace type_traits {
