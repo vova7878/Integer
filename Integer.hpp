@@ -308,15 +308,17 @@ namespace JIO {
                 static_assert(!(high < low), "high < low");
                 if constexpr (high == low) {
                     return c_array<T>();
+                } else {
+                    constexpr T d = high - low;
+                    if constexpr (d == 1) {
+                        return c_array<T, low>();
+                    } else {
+                        return append(
+                                make_seq_h<T, low, low + d / 2 > (),
+                                make_seq_h<T, low + d / 2, low + d > ()
+                                );
+                    }
                 }
-                constexpr T d = high - low;
-                if constexpr (d == 1) {
-                    return c_array<T, low>();
-                }
-                return append(
-                        make_seq_h<T, low, low + d / 2 > (),
-                        make_seq_h<T, low + d / 2, low + d > ()
-                        );
             }
 
             //logarithmic algorithm
@@ -391,16 +393,18 @@ namespace JIO {
                 static_assert(!(high < low), "high < low");
                 if constexpr (high == low) {
                     return t_array<>();
+                } else {
+                    constexpr size_t d = high - low;
+                    if constexpr (d == 1) {
+                        return std::conditional_t < BArr::get(low),
+                                t_array<get_t<TArr, low>>, t_array<>>();
+                    } else {
+                        return append(
+                                conditional_array_h<TArr, BArr, low, low + d / 2 > (),
+                                conditional_array_h<TArr, BArr, low + d / 2, low + d > ()
+                                );
+                    }
                 }
-                constexpr size_t d = high - low;
-                if constexpr (d == 1) {
-                    return std::conditional_t < BArr::get(low),
-                            t_array<get_t<TArr, low>>, t_array<>>();
-                }
-                return append(
-                        conditional_array_h<TArr, BArr, low, low + d / 2 > (),
-                        conditional_array_h<TArr, BArr, low + d / 2, low + d > ()
-                        );
             }
 
             //logarithmic algorithm
