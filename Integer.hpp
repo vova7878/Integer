@@ -847,7 +847,7 @@ namespace JIO {
 
         namespace impl {
 
-            enum IKind {
+            /*enum IKind {
                 illegal = 0, native, pow2, array
             };
 
@@ -867,18 +867,18 @@ namespace JIO {
             struct integer_impl;
 
             template<size_t size, bool sig, bool le>
-            struct native_integer_base;
-
-            template<size_t size, bool sig, bool le>
-            struct native_integer_impl;
-
-            template<size_t size, bool sig, bool le>
             struct integer_impl <size, sig, le, native> {
                 using type = native_integer_impl<size, sig, le>;
-            };
+            };*/
 
-            template<size_t size, bool le>
-            struct native_integer_base<size, false, le> {
+            template<size_t size, bool sig>
+            struct native_integer_base;
+
+            template<size_t size, bool sig>
+            struct native_integer_impl;
+
+            template<size_t size>
+            struct native_integer_base<size, false> {
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -973,8 +973,8 @@ namespace JIO {
                 }
             };
 
-            template<size_t size, bool le>
-            struct native_integer_base<size, true, le> {
+            template<size_t size>
+            struct native_integer_base<size, true> {
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1021,12 +1021,12 @@ namespace JIO {
                 }
             };
 
-            template<size_t size, bool sig, bool le>
-            struct native_integer_impl : public native_integer_base<size, sig, le> {
+            template<size_t size, bool sig>
+            struct native_integer_impl : public native_integer_base<size, sig> {
                 using I = native_integer_impl;
-                using UI = native_integer_impl<size, false, le>;
-                using SI = native_integer_impl<size, true, le>;
-                using B = native_integer_base<size, sig, le>;
+                using UI = native_integer_impl<size, false>;
+                using SI = native_integer_impl<size, true>;
+                using B = native_integer_base<size, sig>;
                 using U = typename B::U;
                 using S = typename B::S;
                 using M = typename B::M;
@@ -1217,7 +1217,7 @@ namespace JIO {
         }
     }
 
-    template<size_t size, bool sig, bool le = true >
+    template<size_t size, bool sig, typename mem_layout>
     class integer;
 }
 
