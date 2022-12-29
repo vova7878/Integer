@@ -620,6 +620,12 @@ namespace JIO {
                 return out;
             }
 
+            constexpr inline size_t char_bits = get_bits<char>();
+            constexpr inline size_t short_bits = get_bits<short>();
+            constexpr inline size_t int_bits = get_bits<int>();
+            constexpr inline size_t long_bits = get_bits<long>();
+            constexpr inline size_t long_long_bits = get_bits<long long>();
+
             using filtred_ints_t = seq::sort_t_array_by_size<
                     make_unique_size_array<seq::append_t<
                     make_unsigned_array<native_ints_t>, extra_u_ints_t>>>;
@@ -634,7 +640,7 @@ namespace JIO {
             constexpr inline size_t min_native_bits = get_bits<min_native_t>();
 
             static_assert(min_native_size == 1, "min_native_size != 1");
-            static_assert(min_native_bits == get_bits<char>(), "min_native_bits != char_bits");
+            static_assert(min_native_bits == char_bits, "min_native_bits != char_bits");
 
             template<size_t... index>
             constexpr inline bool check_bits(seq::index_seq<index...>) {
@@ -693,52 +699,55 @@ namespace JIO {
                 return index < 36 ? index : index - 26;
             }
 
-            template<typename T, typename U = type_traits::make_unsigned<T>>
+            template<typename T, typename U = type_traits::make_unsigned<T>,
+            size_t bits = type_traits::get_bits<T>()>
             constexpr inline int popcount(T tmp) noexcept {
                 using namespace type_traits;
                 U value = tmp;
 #if __has_builtin(__builtin_popcount)
-                if constexpr (sizeof (U) == sizeof (unsigned int)) {
+                if constexpr (bits == int_bits) {
                     return __builtin_popcount(value);
                 } else
 #endif
 #if __has_builtin(__builtin_popcountl)
-                    if constexpr (sizeof (U) == sizeof (unsigned long)) {
+                    if constexpr (bits == long_bits) {
                     return __builtin_popcountl(value);
                 } else
 #endif
 #if __has_builtin(__builtin_popcountll)
-                    if constexpr (sizeof (U) == sizeof (unsigned long long)) {
+                    if constexpr (bits == long_long_bits) {
                     return __builtin_popcountll(value);
                 } else
 #endif
-                    if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
+                    if constexpr ((bits == 128) && int_bits_t::contains(64)) {
                     using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     return popcount<u64>(value) + popcount<u64>(value >> 64);
-                } else if constexpr (get_bits<U>() == 64) {
+                } else if constexpr (bits == 64) {
                     value -= ((value >> 1) & 0x5555555555555555U);
                     value = ((value >> 2) & 0x3333333333333333U) + (value & 0x3333333333333333U);
                     return ((((value >> 4) + value) & 0xf0f0f0f0f0f0f0fU) * 0x101010101010101U) >> 56;
-                } else if constexpr (get_bits<U>() == 32) {
+                } else if constexpr (bits == 32) {
                     value -= ((value >> 1) & 0x55555555U);
                     value = ((value >> 2) & 0x33333333U) + (value & 0x33333333U);
                     return ((((value >> 4) + value) & 0xf0f0f0fU) * 0x1010101U) >> 24;
-                } else if constexpr (get_bits<U>() < get_bits<unsigned int>()) {
-                    return popcount<unsigned int>(value);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned long>()) {
-                    return popcount<unsigned long>(value);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
-                    return popcount<unsigned long long>(value);
-                } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
-                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
-                    return popcount<u128>(value);
-                } else {
+                } else if constexpr ((bits == int_bits) || (bits == long_bits) ||
+                        (bits == long_long_bits) || (bits >= 128) ||
+                        ((bits > long_long_bits) && !int_bits_t::contains(128))) {
                     int out = 0;
                     while (value) {
                         value = U(value - 1) & value;
                         out++;
                     }
                     return out;
+                } else if constexpr (bits < int_bits) {
+                    return popcount<int>(value);
+                } else if constexpr (bits < long_bits) {
+                    return popcount<long>(value);
+                } else if constexpr (bits < long_long_bits) {
+                    return popcount<long long>(value);
+                } else if constexpr ((bits < 128) && int_bits_t::contains(128)) {
+                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
+                    return popcount<u128>(value);
                 }
             }
 
@@ -774,35 +783,37 @@ namespace JIO {
                 using namespace type_traits;
                 U value = tmp;
 #if __has_builtin(__builtin_clz)
-                if constexpr (sizeof (U) == sizeof (unsigned int)) {
+                if constexpr (bits == int_bits) {
                     return value == 0 ? bits : __builtin_clz(value);
                 } else
 #endif
 #if __has_builtin(__builtin_clzl)
-                    if constexpr (sizeof (U) == sizeof (unsigned long)) {
+                    if constexpr (bits == long_bits) {
                     return value == 0 ? bits : __builtin_clzl(value);
                 } else
 #endif
 #if __has_builtin(__builtin_clzll)
-                    if constexpr (sizeof (U) == sizeof (unsigned long long)) {
+                    if constexpr (bits == long_long_bits) {
                     return value == 0 ? bits : __builtin_clzll(value);
                 } else
 #endif
-                    if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
+                    if constexpr ((bits == 128) && int_bits_t::contains(64)) {
                     using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     u64 high = value >> 64;
                     return high == 0 ? 64 + clz<u64>(value) : clz<u64>(high);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned int>()) {
-                    return clz<unsigned int>(value);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned long>()) {
-                    return clz<unsigned long>(value);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
-                    return clz<unsigned long long>(value);
-                } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
-                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
-                    return clz<u128>(value);
-                } else {
+                } else if constexpr ((bits == int_bits) || (bits == long_bits) ||
+                        (bits == long_long_bits) || (bits >= 128) ||
+                        ((bits > long_long_bits) && !int_bits_t::contains(128))) {
                     return bits - popcount<U>(next_pow2_sub1<U>(value));
+                } else if constexpr (bits < int_bits) {
+                    return clz<int>(value) + bits - int_bits;
+                } else if constexpr (bits < long_bits) {
+                    return clz<long>(value) + bits - long_bits;
+                } else if constexpr (bits < long_long_bits) {
+                    return clz<long long>(value) + bits - long_long_bits;
+                } else if constexpr ((bits < 128) && int_bits_t::contains(128)) {
+                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
+                    return clz<u128>(value) + bits - 128;
                 }
             }
 
@@ -811,36 +822,38 @@ namespace JIO {
             constexpr inline int ctz(T tmp) noexcept {
                 using namespace type_traits;
                 U value = tmp;
-#if __has_builtin(__builtin_ctz)
-                if constexpr (sizeof (U) == sizeof (unsigned int)) {
+#if __has_builtin(__builtin_clz)
+                if constexpr (bits == int_bits) {
                     return value == 0 ? bits : __builtin_ctz(value);
                 } else
 #endif
-#if __has_builtin(__builtin_ctzl)
-                    if constexpr (sizeof (U) == sizeof (unsigned long)) {
+#if __has_builtin(__builtin_clzl)
+                    if constexpr (bits == long_bits) {
                     return value == 0 ? bits : __builtin_ctzl(value);
                 } else
 #endif
-#if __has_builtin(__builtin_ctzll)
-                    if constexpr (sizeof (U) == sizeof (unsigned long long)) {
+#if __has_builtin(__builtin_clzll)
+                    if constexpr (bits == long_long_bits) {
                     return value == 0 ? bits : __builtin_ctzll(value);
                 } else
 #endif
-                    if constexpr ((get_bits<U>() == 128) && int_bits_t::contains(64)) {
+                    if constexpr ((bits == 128) && int_bits_t::contains(64)) {
                     using u64 = int_of_bits < instantiation_context<T>(64), false >;
                     u64 low = value;
                     return low == 0 ? 64 + ctz<u64>(value >> 64) : ctz<u64>(low);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned int>()) {
-                    return ctz<unsigned int>(value);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned long>()) {
-                    return ctz<unsigned long>(value);
-                } else if constexpr (get_bits<U>() < get_bits<unsigned long long>()) {
-                    return ctz<unsigned long long>(value);
-                } else if constexpr (int_bits_t::contains(128) && (get_bits<U>() < 128)) {
-                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
-                    return ctz<u128>(value);
-                } else {
+                } else if constexpr ((bits == int_bits) || (bits == long_bits) ||
+                        (bits == long_long_bits) || (bits >= 128) ||
+                        ((bits > long_long_bits) && !int_bits_t::contains(128))) {
                     return popcount<U>(U(value & U(-value)) - U(1));
+                } else if constexpr (bits < int_bits) {
+                    return value == 0 ? bits : ctz<int>(value);
+                } else if constexpr (bits < long_bits) {
+                    return value == 0 ? bits : ctz<long>(value);
+                } else if constexpr (bits < long_long_bits) {
+                    return value == 0 ? bits : ctz<long long>(value);
+                } else if constexpr ((bits < 128) && int_bits_t::contains(128)) {
+                    using u128 = int_of_bits < instantiation_context<T>(128), false >;
+                    return value == 0 ? bits : ctz<u128>(value);
                 }
             }
         }
