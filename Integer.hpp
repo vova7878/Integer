@@ -196,6 +196,9 @@ namespace JIO {
             template<typename Arr1, typename Arr2>
             using append_t = decltype(append(Arr1(), Arr2()));
 
+            template<typename Arr, size_t index>
+            using get_t = typename Arr::template get_t<index>;
+
             template <typename T, T... values>
             struct c_array {
                 using value_type = T;
@@ -207,7 +210,7 @@ namespace JIO {
                 }
 
                 template<size_t index>
-                using get_constant = std::integral_constant<T, get(index)>;
+                using get_t = std::integral_constant<T, get(index)>;
 
                 template<template<typename P, P...> typename X>
                 using transform_all = X<T, values...>;
@@ -241,15 +244,18 @@ namespace JIO {
                 }
 
                 template<T value>
-                using index_of_constant = std::integral_constant<size_t, index_of(value)>;
+                using index_of_t = std::integral_constant<size_t, index_of(value)>;
 
                 constexpr inline static bool contains(T value) noexcept {
                     return index_of(value) != -1;
                 }
 
                 template<T value>
-                using contains_constant = std::bool_constant<contains(value)>;
+                using contains_t = std::bool_constant<contains(value)>;
             };
+
+            template <size_t... values>
+            using index_seq = c_array<size_t, values...>;
 
             template<typename Arr, template<typename P, P...> typename X>
             using c_transform_all = typename Arr::template transform_all<X>;
@@ -268,9 +274,6 @@ namespace JIO {
 
             template<typename Arr, template<auto> typename X>
             using c_transform_t_auto = typename Arr::template transform_t_auto<X>;
-
-            template <size_t... values>
-            using index_seq = c_array<size_t, values...>;
 
             template <typename T, size_t size>
             struct v_array {
@@ -310,10 +313,10 @@ namespace JIO {
                 if constexpr (d == 1) {
                     return c_array<T, low>();
                 }
-                return decltype(append(
+                return append(
                         make_seq_h<T, low, low + d / 2 > (),
                         make_seq_h<T, low + d / 2, low + d > ()
-                        ))();
+                        );
             }
 
             //logarithmic algorithm
@@ -352,13 +355,13 @@ namespace JIO {
                 constexpr static size_t length = sizeof...(Tp);
 
                 template<size_t index>
-                using get = pack_element_t<index, Tp...>;
+                using get_t = pack_element_t<index, Tp...>;
 
                 template<typename T>
-                using contains = micro_std::disjunction<std::bool_constant<std::is_same_v<T, Tp>>...>;
+                using contains_t = micro_std::disjunction<std::bool_constant<std::is_same_v<T, Tp>>...>;
 
                 template<typename T>
-                using index_of = std::integral_constant<signed_size_t,
+                using index_of_t = std::integral_constant<signed_size_t,
                 c_array<bool, std::is_same_v<T, Tp>...>::index_of(true)>;
 
                 template<template<typename...> typename X>
@@ -392,12 +395,12 @@ namespace JIO {
                 constexpr size_t d = high - low;
                 if constexpr (d == 1) {
                     return std::conditional_t < BArr::get(low),
-                            t_array<typename TArr::template get < low>>, t_array<>>();
+                            t_array<get_t<TArr, low>>, t_array<>>();
                 }
-                return decltype(append(
+                return append(
                         conditional_array_h<TArr, BArr, low, low + d / 2 > (),
                         conditional_array_h<TArr, BArr, low + d / 2, low + d > ()
-                        ))();
+                        );
             }
 
             //logarithmic algorithm
@@ -434,17 +437,17 @@ namespace JIO {
             template<typename Arr>
             using index_to_sort_array = c_transform_c_auto<
             make_index_seq<0, Arr::length>, size_t,
-            index_in_sorted_array<Arr>::template index_of_constant>;
+            index_in_sorted_array<Arr>::template index_of_t>;
 
             template<typename Arr>
             using sort_c_array = c_transform_c_auto<
             index_to_sort_array<Arr>,
-            typename Arr::value_type, Arr::template get_constant>;
+            typename Arr::value_type, Arr::template get_t>;
 
             template<typename Arr, typename V, template<typename> typename X>
             using sort_t_array = c_transform_t_auto<
             index_to_sort_array<t_transform_c<Arr, V, X>>,
-            Arr::template get>;
+            Arr::template get_t>;
 
             template<typename Arr>
             using sort_t_array_by_size = sort_t_array<Arr, size_t, size_of>;
@@ -461,16 +464,12 @@ namespace JIO {
                     >;
 
             template<size_t index>
-            using extra_su_int_pair_by_index_t =
-            typename extra_su_int_pairs_t::template get<index>;
-
-            template<size_t index>
             using extra_s_int_by_index_t =
-            typename extra_su_int_pair_by_index_t<index>::template get<0>;
+            seq::get_t<seq::get_t<extra_su_int_pairs_t, index>, 0>;
 
             template<size_t index>
             using extra_u_int_by_index_t =
-            typename extra_su_int_pair_by_index_t<index>::template get<1>;
+            seq::get_t<seq::get_t<extra_su_int_pairs_t, index>, 1>;
 
             using extra_s_ints_t = seq::c_transform_t_auto<
                     seq::make_index_seq<0, extra_su_int_pairs_t::length>,
@@ -530,12 +529,13 @@ namespace JIO {
             using is_same_ignore_cv = std::is_same<std::remove_cv_t<T1>, std::remove_cv_t<T2>>;
 
             template<typename T>
-            using is_native_int = micro_std::conjunction<std::is_integral<T>, micro_std::negation<is_same_ignore_cv<T, bool>>>;
+            using is_native_int = micro_std::conjunction<std::is_integral<T>,
+            micro_std::negation<is_same_ignore_cv<T, bool>>>;
 
             template<typename T>
             using is_extra_int = micro_std::disjunction<
-            typename extra_s_ints_t::contains<std::remove_cv_t<T>>,
-            typename extra_u_ints_t::contains<std::remove_cv_t<T>>>;
+            typename extra_s_ints_t::template contains_t<std::remove_cv_t<T>>,
+            typename extra_u_ints_t::template contains_t<std::remove_cv_t<T>>>;
 
             template<typename T>
             using is_integral = micro_std::disjunction<is_native_int<T>, is_extra_int<T>>;
@@ -543,13 +543,13 @@ namespace JIO {
             template<typename T>
             constexpr inline auto make_signed_h() {
                 if constexpr (constexpr auto index = typename extra_s_ints_t::
-                        template index_of<std::remove_cv_t < T >> (); index != -1) {
+                        template index_of_t<std::remove_cv_t < T >> (); index != -1) {
                     return seq::type_container<T> ();
                 } else if constexpr (constexpr auto index =
                         typename extra_u_ints_t::
-                        template index_of<std::remove_cv_t < T >> (); index != -1) {
-                    return seq::type_container < share_cv<typename extra_s_ints_t::
-                            template get < instantiation_context<T>(index) >, T >> ();
+                        template index_of_t<std::remove_cv_t < T >> (); index != -1) {
+                    return seq::type_container < share_cv <
+                            seq::get_t <extra_s_ints_t, instantiation_context<T>(index) >, T >> ();
                 } else if constexpr (is_native_int<T>()) {
                     return std::make_signed<T>();
                 }
@@ -561,13 +561,13 @@ namespace JIO {
             template<typename T>
             constexpr inline auto make_unsigned_h() {
                 if constexpr(constexpr auto index = typename extra_u_ints_t::
-                        template index_of<std::remove_cv_t < T >> (); index != -1) {
+                        template index_of_t<std::remove_cv_t < T >> (); index != -1) {
                     return seq::type_container<T> ();
                 } else if constexpr (constexpr auto index =
                         typename extra_s_ints_t::
-                        template index_of<std::remove_cv_t < T >> (); index != -1) {
-                    return seq::type_container < share_cv<typename extra_u_ints_t::
-                            template get < instantiation_context<T>(index) >, T >> ();
+                        template index_of_t<std::remove_cv_t < T >> (); index != -1) {
+                    return seq::type_container < share_cv <
+                            seq::get_t <extra_u_ints_t, instantiation_context<T>(index) >, T >> ();
                 } else if constexpr (is_native_int<T>()) {
                     return std::make_unsigned<T>();
                 }
@@ -597,8 +597,8 @@ namespace JIO {
                     make_unique_size_array<seq::append_t<
                     make_unsigned_array<native_ints_t>, extra_u_ints_t>>>;
 
-            using min_native_t = filtred_ints_t::get<0>;
-            using max_native_t = filtred_ints_t::get<filtred_ints_t::length - 1 >;
+            using min_native_t = seq::get_t<filtred_ints_t, 0>;
+            using max_native_t = seq::get_t<filtred_ints_t, filtred_ints_t::length - 1 >;
 
             constexpr inline size_t min_native_size = sizeof (min_native_t);
             constexpr inline size_t max_native_size = sizeof (max_native_t);
@@ -612,8 +612,8 @@ namespace JIO {
             template<size_t... index>
             constexpr inline bool check_bits(seq::index_seq<index...>) {
                 return micro_std::conjunction < std::bool_constant < (
-                        get_bits<filtred_ints_t::get < index >> () ==
-                        sizeof (filtred_ints_t::get < index >) * min_native_bits
+                        get_bits<seq::get_t<filtred_ints_t, index >> () ==
+                        sizeof (seq::get_t<filtred_ints_t, index>) * min_native_bits
                         )>...>();
             }
 
@@ -628,7 +628,7 @@ namespace JIO {
             using int_sizes_t = sizes_array<filtred_ints_t>;
             using int_bits_t = bytes_to_bits<int_sizes_t>;
 
-            template<size_t index, bool sig, typename I = typename filtred_ints_t::template get<index>>
+            template<size_t index, bool sig, typename I = seq::get_t<filtred_ints_t, index>>
             using int_of_index = std::conditional_t<sig, make_signed<I>, make_unsigned<I>>;
 
             template<size_t size, bool sig>
