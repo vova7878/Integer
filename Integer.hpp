@@ -362,8 +362,7 @@ namespace JIO {
 
             template<size_t index, typename... Tp>
             using pack_element_t = typename std::remove_reference_t<
-            decltype(pack_element<index>(std::declval<type_container<Tp>>()...))
-            >::type;
+            decltype(pack_element<index>(type_container<Tp>()...))>::type;
 
             template <typename... Tp>
             struct t_array {
