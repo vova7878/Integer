@@ -231,16 +231,16 @@ namespace JIO {
                 template<template<auto...> typename X>
                 using transform_all_auto = X<values...>;
 
-                template<typename V, template<typename P, P> typename X>
+                template<typename V, template<typename P, P...> typename X>
                 using transform_c = c_array<V, X<T, values>::value...>;
 
-                template<typename V, template<auto> typename X>
+                template<typename V, template<auto...> typename X>
                 using transform_c_auto = c_array<V, X<values>::value...>;
 
-                template<template<typename P, P> typename X>
+                template<template<typename P, P...> typename X>
                 using transform_t = t_array<X<T, values>...>;
 
-                template<template<auto> typename X>
+                template<template<auto...> typename X>
                 using transform_t_auto = t_array<X<values>...>;
 
                 constexpr T operator[](size_t index) const noexcept {
@@ -276,16 +276,16 @@ namespace JIO {
             template<typename Arr, template<auto...> typename X>
             using c_transform_all_auto = typename Arr::template transform_all_auto<X>;
 
-            template<typename Arr, typename V, template<typename P, P> typename X>
+            template<typename Arr, typename V, template<typename P, P...> typename X>
             using c_transform_c = typename Arr::template transform_c<V, X>;
 
-            template<typename Arr, typename V, template<auto> typename X>
+            template<typename Arr, typename V, template<auto...> typename X>
             using c_transform_c_auto = typename Arr::template transform_c_auto<V, X>;
 
-            template<typename Arr, template<typename P, P> typename X>
+            template<typename Arr, template<typename P, P...> typename X>
             using c_transform_t = typename Arr::template transform_t<X>;
 
-            template<typename Arr, template<auto> typename X>
+            template<typename Arr, template<auto...> typename X>
             using c_transform_t_auto = typename Arr::template transform_t_auto<X>;
 
             template <typename T, size_t size>
@@ -382,20 +382,20 @@ namespace JIO {
                 template<template<typename...> typename X>
                 using transform_all = X<Tp...>;
 
-                template<typename V, template<typename> typename X>
+                template<typename V, template<typename...> typename X>
                 using transform_c = c_array<V, X<Tp>::value...>;
 
-                template<template<typename> typename X>
+                template<template<typename...> typename X>
                 using transform_t = t_array<X<Tp>...>;
             };
 
             template<typename Arr, template<typename...> typename X>
             using t_transform_all = typename Arr::template transform_all<X>;
 
-            template<typename Arr, typename V, template<typename> typename X>
+            template<typename Arr, typename V, template<typename...> typename X>
             using t_transform_c = typename Arr::template transform_c<V, X>;
 
-            template<typename Arr, template<typename> typename X>
+            template<typename Arr, template<typename...> typename X>
             using t_transform_t = typename Arr::template transform_t<X>;
 
             template <typename T1, typename T2>
