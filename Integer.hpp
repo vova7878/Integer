@@ -769,8 +769,13 @@ namespace JIO {
             constexpr inline int popcount(T tmp) noexcept {
                 using namespace type_traits;
                 U value = tmp;
+#if __cpp_lib_bitops >= 201907L
+                if constexpr (is_native_int<U>()) {
+                    return std::popcount(value);
+                } else
+#endif
 #if __has_builtin(__builtin_popcount)
-                if constexpr (bits == int_bits) {
+                    if constexpr (bits == int_bits) {
                     return __builtin_popcount(value);
                 } else
 #endif
@@ -847,8 +852,13 @@ namespace JIO {
             constexpr inline int clz(T tmp) noexcept {
                 using namespace type_traits;
                 U value = tmp;
+#if __cpp_lib_bitops >= 201907L
+                if constexpr (is_native_int<U>()) {
+                    return std::countl_zero(value);
+                } else
+#endif
 #if __has_builtin(__builtin_clz)
-                if constexpr (bits == int_bits) {
+                    if constexpr (bits == int_bits) {
                     return value == 0 ? bits : __builtin_clz(value);
                 } else
 #endif
@@ -887,8 +897,13 @@ namespace JIO {
             constexpr inline int ctz(T tmp) noexcept {
                 using namespace type_traits;
                 U value = tmp;
+#if __cpp_lib_bitops >= 201907L
+                if constexpr (is_native_int<U>()) {
+                    return std::countr_zero(value);
+                } else
+#endif
 #if __has_builtin(__builtin_clz)
-                if constexpr (bits == int_bits) {
+                    if constexpr (bits == int_bits) {
                     return value == 0 ? bits : __builtin_ctz(value);
                 } else
 #endif
