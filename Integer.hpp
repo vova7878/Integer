@@ -288,6 +288,9 @@ namespace JIO {
             template<typename Arr, template<auto...> typename X>
             using c_transform_t_auto = typename Arr::template transform_t_auto<X>;
 
+            template <typename CArr>
+            using c_to_t = c_transform_t<CArr, std::template integral_constant>;
+
             template <typename T, size_t size>
             struct v_array {
                 using value_type = T;
@@ -388,6 +391,9 @@ namespace JIO {
                 using transform_t = t_array<X<Tp>...>;
             };
 
+            template <typename T1, typename T2>
+            using t_pair = t_array<T1, T2>;
+
             template<typename Arr, template<typename...> typename X>
             using t_transform_all = typename Arr::template transform_all<X>;
 
@@ -397,8 +403,11 @@ namespace JIO {
             template<typename Arr, template<typename...> typename X>
             using t_transform_t = typename Arr::template transform_t<X>;
 
-            template <typename T1, typename T2>
-            using t_pair = t_array<T1, T2>;
+            template<typename T>
+            using id_type = T;
+
+            template <typename TArr, typename V>
+            using t_to_c = t_transform_c<TArr, V, id_type>;
 
             template<typename TArr, typename BArr, size_t low, size_t high>
             constexpr inline auto conditional_array_h() noexcept {
