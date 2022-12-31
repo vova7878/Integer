@@ -492,16 +492,6 @@ namespace JIO {
 
         namespace type_traits {
 
-            enum struct endian {
-                little, big, mixed, undefined,
-#if __cpp_lib_endian >= 201907L
-                        native = (std::endian::native == std::endian::little) ? little :
-                        ((std::endian::native == std::endian::big) ? : big : mixed)
-#else
-                        native = undefined
-#endif
-            };
-
             //base settings
             using native_ints_t = seq::t_array<char, short, int, long, long long>;
             using extra_su_int_pairs_t = seq::t_array<
@@ -702,6 +692,54 @@ namespace JIO {
                 U tmp = value;
                 return tmp & (tmp - 1);
             }
+
+            namespace endian_h {
+
+                static_assert(size_t(min_native_t(~min_native_t(0))) >=
+                        max_native_size, "too big max_native_size");
+
+                constexpr inline max_native_t little() noexcept {
+                    max_native_t out = 0;
+                    for (size_t i = 0; i < max_native_size; i++) {
+                        out <<= min_native_bits;
+                        out |= min_native_t(max_native_size - i);
+                    }
+                    return out;
+                }
+
+                constexpr inline max_native_t big() noexcept {
+                    max_native_t out = 0;
+                    for (size_t i = 0; i < max_native_size; i++) {
+                        out <<= min_native_bits;
+                        out |= min_native_t(i + 1);
+                    }
+                    return out;
+                }
+
+                constexpr inline auto native() noexcept {
+                    seq::v_array<min_native_t, max_native_size> out = {};
+                    for (size_t i = 0; i < max_native_size; i++) {
+                        out[i] = min_native_t(i + 1);
+                    }
+                    return out;
+                }
+            }
+
+            enum struct endian {
+                little = 0, big, mixed, undefined,
+#if __cpp_lib_endian >= 201907L
+                        native = (std::endian::native == std::endian::little) ? little :
+                        ((std::endian::native == std::endian::big) ? big : mixed)
+#elif __cpp_lib_bit_cast >= 201806L
+                        native = (endian_h::little() == std::bit_cast<max_native_t>(endian_h::native())) ? little :
+                        ((endian_h::big() == std::bit_cast<max_native_t>(endian_h::native())) ? big : mixed)
+#elif __has_builtin(__builtin_bit_cast)
+                        native = (endian_h::little() == __builtin_bit_cast(max_native_t, endian_h::native())) ? little :
+                        ((endian_h::big() == __builtin_bit_cast(max_native_t, endian_h::native())) ? big : mixed)
+#else
+                        native = undefined
+#endif
+            };
         }
 
         namespace utils {
