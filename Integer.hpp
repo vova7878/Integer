@@ -30,6 +30,11 @@
 #define INTEGER_HPP_HAS_LIMITS
 #endif
 
+#if __has_include(<bit>)
+#include <bit>
+#define INTEGER_HPP_HAS_BIT
+#endif
+
 #if __has_include(<ostream>)
 #include <ostream>
 #define INTEGER_HPP_HAS_OSTREAM
@@ -486,6 +491,16 @@ namespace JIO {
         }
 
         namespace type_traits {
+
+            enum struct endian {
+                little, big, mixed, undefined,
+#if __cpp_lib_endian >= 201907L
+                        native = (std::endian::native == std::endian::little) ? little :
+                        ((std::endian::native == std::endian::big) ? : big : mixed)
+#else
+                        native = undefined
+#endif
+            };
 
             //base settings
             using native_ints_t = seq::t_array<char, short, int, long, long long>;
@@ -1253,6 +1268,7 @@ namespace JIO {
 #endif
 
 #undef INTEGER_HPP_HAS_OSTREAM
+#undef INTEGER_HPP_HAS_BIT
 #undef INTEGER_HPP_HAS_LIMITS
 
 #endif /* INTEGER_HPP */
