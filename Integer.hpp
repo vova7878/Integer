@@ -1310,7 +1310,7 @@ namespace JIO {
         }
     }
 
-    template<size_t size, bool sig, typename mem_layout>
+    template<i_detail::size_t size, bool sig, typename mem_layout>
     class integer;
 }
 
