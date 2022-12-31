@@ -25,6 +25,11 @@
 
 #include <type_traits>
 
+#if __has_include(<limits>)
+#include <limits>
+#define INTEGER_HPP_HAS_LIMITS
+#endif
+
 #if __has_include(<ostream>)
 #include <ostream>
 #define INTEGER_HPP_HAS_OSTREAM
@@ -611,13 +616,20 @@ namespace JIO {
 
             template<typename T, typename UT = make_unsigned<T>>
             constexpr inline size_t get_bits() {
-                UT test = ~UT(0);
-                size_t out = 0;
-                while (test) {
-                    test >>= 1;
-                    out++;
+#ifdef INTEGER_HPP_HAS_LIMITS
+                if constexpr (std::numeric_limits<UT>::is_specialized) {
+                    return std::numeric_limits<UT>::digits;
+                } else
+#endif
+                {
+                    UT test = ~UT(0);
+                    size_t out = 0;
+                    while (test) {
+                        test >>= 1;
+                        out++;
+                    }
+                    return out;
                 }
-                return out;
             }
 
             constexpr inline size_t char_bits = get_bits<char>();
@@ -1234,12 +1246,13 @@ namespace JIO {
     class integer;
 }
 
-#undef INTEGER_HPP_HAS_OSTREAM
-
 #ifndef INTEGER_HPP_HAS_BUILTIN_CHECK
 #undef __has_builtin
 #else
 #undef INTEGER_HPP_HAS_BUILTIN_CHECK
 #endif
+
+#undef INTEGER_HPP_HAS_OSTREAM
+#undef INTEGER_HPP_HAS_LIMITS
 
 #endif /* INTEGER_HPP */
