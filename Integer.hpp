@@ -484,16 +484,16 @@ namespace JIO {
                 }
 
                 template<typename Arr>
-                using t_get = typename decltype(get_h<Arr>())::type;
-
-                template<size_t... arr>
-                using get = t_get<index_seq<arr...>>;
-
-                template<typename Arr>
                 using t_get_leaf = decltype(get_h<Arr>());
 
                 template<size_t... arr>
                 using get_leaf = t_get_leaf<index_seq<arr...>>;
+
+                template<typename Arr>
+                using t_get = typename t_get_leaf<Arr>::type;
+
+                template<size_t... arr>
+                using get = t_get<index_seq<arr...>>;
             };
 
             template<typename data, typename... Leaves>
