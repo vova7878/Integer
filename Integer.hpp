@@ -53,6 +53,9 @@ namespace JIO {
         using size_t = decltype(sizeof (0));
         using signed_size_t = typename std::make_signed<size_t>::type;
 
+        template<size_t value>
+        using size_constant = std::integral_constant<size_t, value>;
+
         template<typename T>
         using size_of = std::integral_constant<size_t, sizeof (T)>;
 
@@ -469,11 +472,12 @@ namespace JIO {
             template<typename data, typename LeavesArr>
             struct t_tree {
                 using type = data;
+                constexpr static size_t length = LeavesArr::length;
 
                 template<typename Arr, size_t id = 0 >
                 constexpr static auto get_h() noexcept {
                     if constexpr (Arr::length == id) {
-                        return type_container<type>();
+                        return t_tree();
                     } else {
                         return get_t<LeavesArr, Arr::get(id)>::template get_h<Arr, id + 1 > ();
                     }
@@ -484,10 +488,28 @@ namespace JIO {
 
                 template<size_t... arr>
                 using get = t_get<index_seq<arr...>>;
+
+                template<typename Arr>
+                using t_get_leaf = decltype(get_h<Arr>());
+
+                template<size_t... arr>
+                using get_leaf = t_get_leaf<index_seq<arr...>>;
             };
 
             template<typename data, typename... Leaves>
             using tree = t_tree<data, t_array<Leaves...>>;
+
+            template<typename Tree, typename Arr>
+            using tree_t_get = typename Tree::template t_get<Arr>;
+
+            template<typename Tree, size_t... arr>
+            using tree_get = tree_t_get<Tree, index_seq<arr...>>;
+
+            template<typename Tree, typename Arr>
+            using tree_t_get_leaf = typename Tree::template t_get_leaf<Arr>;
+
+            template<typename Tree, size_t... arr>
+            using tree_get_leaf = tree_t_get_leaf<Tree, index_seq<arr...>>;
         }
 
         namespace type_traits {
@@ -940,38 +962,15 @@ namespace JIO {
 
         namespace impl {
 
-            /*enum IKind {
-                illegal = 0, native, pow2, array
-            };
-
-            constexpr inline IKind i_kind(size_t size) noexcept {
-                if (!size) {
-                    return illegal;
-                }
-                if (type_traits::int_sizes_t::contains(size)) {
-                    return native;
-                }
-                return (size % type_traits::max_native_size == 0) &&
-                        type_traits::is_pow2(size / type_traits::max_native_size) ?
-                        pow2 : array;
-            }
-
-            template<size_t size, bool sig, bool le, IKind = i_kind(size)>
-            struct integer_impl;
-
-            template<size_t size, bool sig, bool le>
-            struct integer_impl <size, sig, le, native> {
-                using type = native_integer_impl<size, sig, le>;
-            };*/
-
-            template<size_t size, bool sig>
+            template<typename mem_tree, bool sig>
             struct native_integer_base;
 
-            template<size_t size, bool sig>
+            template<typename mem_tree, bool sig>
             struct native_integer_impl;
 
-            template<size_t size>
-            struct native_integer_base<size, false> {
+            template<typename mem_tree>
+            struct native_integer_base<mem_tree, false> {
+                constexpr static size_t size = seq::tree_get<mem_tree>();
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1066,8 +1065,9 @@ namespace JIO {
                 }
             };
 
-            template<size_t size>
-            struct native_integer_base<size, true> {
+            template<typename mem_tree>
+            struct native_integer_base<mem_tree, true> {
+                constexpr static size_t size = seq::tree_get<mem_tree>();
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1114,12 +1114,14 @@ namespace JIO {
                 }
             };
 
-            template<size_t size, bool sig>
-            struct native_integer_impl : public native_integer_base<size, sig> {
+            template<typename mem_tree, bool sig>
+            struct native_integer_impl : public native_integer_base<mem_tree, sig> {
+                static_assert(mem_tree::length == 0, "native mem_tree must be empty");
+                constexpr static size_t size = seq::tree_get<mem_tree>();
                 using I = native_integer_impl;
-                using UI = native_integer_impl<size, false>;
-                using SI = native_integer_impl<size, true>;
-                using B = native_integer_base<size, sig>;
+                using UI = native_integer_impl<mem_tree, false>;
+                using SI = native_integer_impl<mem_tree, true>;
+                using B = native_integer_base<mem_tree, sig>;
                 using U = typename B::U;
                 using S = typename B::S;
                 using M = typename B::M;
@@ -1310,8 +1312,11 @@ namespace JIO {
         }
     }
 
-    template<i_detail::size_t size, bool sig, typename mem_layout>
-    class integer;
+    template<typename mem_tree, bool sig>
+    class tree_integer;
+
+    template<i_detail::size_t size, bool sig, typename mem_seq>
+    class seq_integer;
 }
 
 #ifndef INTEGER_HPP_HAS_BUILTIN_CHECK
