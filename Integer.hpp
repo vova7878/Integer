@@ -461,7 +461,7 @@ namespace JIO {
             index_to_sort_array<Arr>,
             typename Arr::value_type, Arr::template get_t>;
 
-            template<typename Arr, typename V, template<typename> typename X>
+            template<typename Arr, typename V, template<typename...> typename X>
             using sort_t_array = c_transform_t_auto<
             index_to_sort_array<t_transform_c<Arr, V, X>>,
             Arr::template get_t>;
