@@ -603,68 +603,41 @@ namespace JIO {
             template<typename Arr>
             using sort_t_array_by_size = sort_t_array<Arr, size_t, size_of>;
 
-            template<typename data, typename LeavesArr>
-            struct a_tree {
-                using type = data;
-                constexpr static size_t length = LeavesArr::length;
+            template<typename... leaves>
+            using tree = t_array<leaves...>;
 
-                template<typename Arr, size_t id = 0 >
-                constexpr static auto get_h() noexcept {
+            namespace tree_ops_h {
+
+                template<typename Tree, typename Arr, size_t id = 0 >
+                constexpr inline auto get_leaf() noexcept {
                     if constexpr (Arr::length == id) {
-                        return a_tree();
+                        return Tree();
                     } else {
-                        return get_t<LeavesArr, Arr::get(id)>::template get_h<Arr, id + 1 > ();
+                        return get_leaf < get_t<Tree, Arr::get(id)>, Arr, id + 1 > ();
                     }
                 }
 
-                template<typename Arr>
-                using a_get_leaf = decltype(get_h<Arr>());
-
-                template<size_t... arr>
-                using get_leaf = a_get_leaf<index_seq<arr...>>;
-
-                template<typename Arr>
-                using a_get = typename a_get_leaf<Arr>::type;
-
-                template<size_t... arr>
-                using get = a_get<index_seq<arr...>>;
-
-                template<typename Arr, size_t id = 0 >
-                constexpr static auto remove_h() noexcept {
+                template<typename Tree, typename Arr, size_t id = 0 >
+                constexpr inline auto remove_leaf() noexcept {
                     if constexpr (Arr::length - 1 == id) {
-                        return a_tree<data, t_remove_single<LeavesArr, Arr::get(id)>>();
+                        return t_remove_single<Tree, Arr::get(id)>();
                     } else {
-                        return get_t<LeavesArr, Arr::get(id)>::template remove_h<Arr, id + 1 > ();
+                        return remove_leaf < get_t<Tree, Arr::get(id)>, Arr, id + 1 > ();
                     }
                 }
-
-                template<typename Arr>
-                using a_remove_leaf = decltype(remove_h<Arr>());
-
-                template<size_t... arr>
-                using remove_leaf = a_remove_leaf<index_seq<arr...>>;
-            };
-
-            template<typename data, typename... Leaves>
-            using tree = a_tree<data, t_array<Leaves...>>;
+            }
 
             template<typename Tree, typename Arr>
-            using a_tree_get = typename Tree::template a_get<Arr>;
+            using a_get_leaf = decltype(tree_ops_h::get_leaf<Tree, Arr>());
 
             template<typename Tree, size_t... arr>
-            using tree_get = a_tree_get<Tree, index_seq<arr...>>;
+            using get_leaf = a_get_leaf<Tree, index_seq<arr...>>;
 
             template<typename Tree, typename Arr>
-            using a_tree_get_leaf = typename Tree::template a_get_leaf<Arr>;
+            using a_remove_leaf = decltype(tree_ops_h::remove_leaf<Tree, Arr>());
 
             template<typename Tree, size_t... arr>
-            using tree_get_leaf = a_tree_get_leaf<Tree, index_seq<arr...>>;
-
-            template<typename Tree, typename Arr>
-            using a_tree_remove_leaf = typename Tree::template a_remove_leaf<Arr>;
-
-            template<typename Tree, size_t... arr>
-            using tree_remove_leaf = a_tree_get_leaf<Tree, index_seq<arr...>>;
+            using remove_leaf = a_remove_leaf<Tree, index_seq<arr...>>;
         }
 
         namespace type_traits {
@@ -1125,7 +1098,7 @@ namespace JIO {
 
             template<typename mem_tree>
             struct native_integer_base<mem_tree, false> {
-                constexpr static size_t size = seq::tree_get<mem_tree>();
+                constexpr static size_t size = mem_tree::value;
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1222,7 +1195,7 @@ namespace JIO {
 
             template<typename mem_tree>
             struct native_integer_base<mem_tree, true> {
-                constexpr static size_t size = seq::tree_get<mem_tree>();
+                constexpr static size_t size = mem_tree::value;
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1271,8 +1244,7 @@ namespace JIO {
 
             template<typename mem_tree, bool sig>
             struct native_integer_impl : public native_integer_base<mem_tree, sig> {
-                static_assert(mem_tree::length == 0, "native mem_tree must be empty");
-                constexpr static size_t size = seq::tree_get<mem_tree>();
+                constexpr static size_t size = mem_tree::value;
                 using I = native_integer_impl;
                 using UI = native_integer_impl<mem_tree, false>;
                 using SI = native_integer_impl<mem_tree, true>;
