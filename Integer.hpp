@@ -409,6 +409,81 @@ namespace JIO {
             template <typename TArr, typename V>
             using t_to_c = t_transform_c<TArr, V, id_type>;
 
+            namespace array_ops_h {
+
+                template<size_t from, size_t to>
+                struct remove_index {
+                    template<size_t index>
+                    using impl = size_constant<(index < from) ? index : to + index - from>;
+                };
+
+                template<size_t length, size_t from, size_t to>
+                using remove_index_t = c_transform_c_auto<
+                seq::make_index_seq < 0, length - to + from>, size_t,
+                remove_index<from, to>::template impl>;
+
+                template<typename Arr1, size_t index1, typename Arr2, size_t index2, size_t length>
+                struct insert {
+
+                    template<size_t index>
+                    constexpr static auto impl_f() noexcept {
+                        if constexpr (index < index1) {
+                            return get_t<Arr1, index>();
+                        } else if constexpr (index < index1 + length) {
+                            return get_t<Arr2, index - index1 + index2 > ();
+                        } else {
+                            return get_t<Arr1, index - length > ();
+                        }
+                    }
+
+                    template<size_t index>
+                    using impl = decltype(impl_f<index>());
+                };
+            }
+
+            template<typename Arr, size_t from, size_t to>
+            using t_remove_from_to = c_transform_t_auto<
+            array_ops_h::remove_index_t<Arr::length, from, to>,
+            Arr::template get_t>;
+
+            template<typename Arr, size_t from, size_t length>
+            using t_remove_from_length = t_remove_from_to<Arr, from, from + length>;
+
+            template<typename Arr, size_t index>
+            using t_remove_single = t_remove_from_length<Arr, index, 1>;
+
+            template<typename Arr, size_t from, size_t to>
+            using c_remove_from_to = c_transform_c_auto<
+            array_ops_h::remove_index_t<Arr::length, from, to>,
+            typename Arr::value_type, Arr::template get_t>;
+
+            template<typename Arr, size_t from, size_t length>
+            using c_remove_from_length = c_remove_from_to<Arr, from, from + length>;
+
+            template<typename Arr, size_t index>
+            using c_remove_single = c_remove_from_length<Arr, index, 1>;
+
+            template<typename Arr1, size_t index1, typename Arr2, size_t index2, size_t length>
+            using t_insert = c_transform_t_auto<seq::make_index_seq < 0, Arr1::length + length>,
+            array_ops_h::insert<Arr1, index1, Arr2, index2, length>::template impl>;
+
+            template<typename Arr1, size_t index, typename Arr2>
+            using t_insert_fully = t_insert<Arr1, index, Arr2, 0, Arr2::length>;
+
+            template<typename Arr, size_t index, typename... Tp>
+            using t_insert_pack = t_insert_fully<Arr, index, t_array<Tp...>>;
+
+            template<typename Arr1, size_t index1, typename Arr2, size_t index2, size_t length>
+            using c_insert = c_transform_c_auto<seq::make_index_seq < 0, Arr1::length + length>,
+            typename Arr1::value_type,
+            array_ops_h::insert<Arr1, index1, Arr2, index2, length>::template impl>;
+
+            template<typename Arr1, size_t index, typename Arr2>
+            using c_insert_fully = c_insert<Arr1, index, Arr2, 0, Arr2::length>;
+
+            template<typename Arr, size_t index, typename Arr::value_type... v>
+            using c_insert_pack = c_insert_fully<Arr, index, c_array<typename Arr::value_type, v...>>;
+
             template<typename TArr, typename BArr, size_t low, size_t high>
             constexpr inline auto conditional_array_h() noexcept {
                 static_assert(!(high < low), "high < low");
