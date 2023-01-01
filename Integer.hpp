@@ -179,6 +179,16 @@ namespace JIO {
 
             template<typename T>
             using add_volatile_t = typename add_volatile<T>::type;
+
+            template<typename T>
+            constexpr inline const T& min(const T &a, const T &b) {
+                return a < b ? a : b;
+            }
+
+            template<typename T>
+            constexpr inline const T& max(const T &a, const T &b) {
+                return a > b ? a : b;
+            }
         }
 
         namespace seq {
@@ -439,6 +449,24 @@ namespace JIO {
                     template<size_t index>
                     using impl = decltype(impl_f<index>());
                 };
+
+                template<typename Arr1, size_t index1, typename Arr2, size_t index2, size_t length>
+                struct replace {
+
+                    template<size_t index>
+                    constexpr static auto impl_f() noexcept {
+                        if constexpr (index < index1) {
+                            return get_t<Arr1, index>();
+                        } else if constexpr (index < index1 + length) {
+                            return get_t<Arr2, index - index1 + index2 > ();
+                        } else {
+                            return get_t<Arr1, index> ();
+                        }
+                    }
+
+                    template<size_t index>
+                    using impl = decltype(impl_f<index>());
+                };
             }
 
             template<typename Arr, size_t from, size_t to>
@@ -483,6 +511,29 @@ namespace JIO {
 
             template<typename Arr, size_t index, typename Arr::value_type... v>
             using c_insert_pack = c_insert_fully<Arr, index, c_array<typename Arr::value_type, v...>>;
+
+            template<typename Arr1, size_t index1, typename Arr2, size_t index2, size_t length>
+            using t_replace = c_transform_t_auto<seq::make_index_seq < 0,
+            micro_std::max(Arr1::length, length + index1)>,
+            array_ops_h::replace<Arr1, index1, Arr2, index2, length>::template impl>;
+
+            template<typename Arr1, size_t index, typename Arr2>
+            using t_replace_fully = t_replace<Arr1, index, Arr2, 0, Arr2::length>;
+
+            template<typename Arr, size_t index, typename... Tp>
+            using t_replace_pack = t_replace_fully<Arr, index, t_array<Tp...>>;
+
+            template<typename Arr1, size_t index1, typename Arr2, size_t index2, size_t length>
+            using c_replace = c_transform_c_auto<seq::make_index_seq < 0,
+            micro_std::max(Arr1::length, length + index1)>,
+            typename Arr1::value_type,
+            array_ops_h::replace<Arr1, index1, Arr2, index2, length>::template impl>;
+
+            template<typename Arr1, size_t index, typename Arr2>
+            using c_replace_fully = c_replace<Arr1, index, Arr2, 0, Arr2::length>;
+
+            template<typename Arr, size_t index, typename Arr::value_type... v>
+            using c_replace_pack = c_replace_fully<Arr, index, c_array<typename Arr::value_type, v...>>;
 
             template<typename TArr, typename BArr, size_t low, size_t high>
             constexpr inline auto conditional_array_h() noexcept {
