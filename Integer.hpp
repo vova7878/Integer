@@ -553,14 +553,14 @@ namespace JIO {
             using sort_t_array_by_size = sort_t_array<Arr, size_t, size_of>;
 
             template<typename data, typename LeavesArr>
-            struct t_tree {
+            struct a_tree {
                 using type = data;
                 constexpr static size_t length = LeavesArr::length;
 
                 template<typename Arr, size_t id = 0 >
                 constexpr static auto get_h() noexcept {
                     if constexpr (Arr::length == id) {
-                        return t_tree();
+                        return a_tree();
                     } else {
                         return get_t<LeavesArr, Arr::get(id)>::template get_h<Arr, id + 1 > ();
                     }
@@ -580,19 +580,19 @@ namespace JIO {
             };
 
             template<typename data, typename... Leaves>
-            using tree = t_tree<data, t_array<Leaves...>>;
+            using tree = a_tree<data, t_array<Leaves...>>;
 
             template<typename Tree, typename Arr>
-            using tree_t_get = typename Tree::template t_get<Arr>;
+            using a_tree_get = typename Tree::template t_get<Arr>;
 
             template<typename Tree, size_t... arr>
-            using tree_get = tree_t_get<Tree, index_seq<arr...>>;
+            using tree_get = a_tree_get<Tree, index_seq<arr...>>;
 
             template<typename Tree, typename Arr>
-            using tree_t_get_leaf = typename Tree::template t_get_leaf<Arr>;
+            using a_tree_get_leaf = typename Tree::template t_get_leaf<Arr>;
 
             template<typename Tree, size_t... arr>
-            using tree_get_leaf = tree_t_get_leaf<Tree, index_seq<arr...>>;
+            using tree_get_leaf = a_tree_get_leaf<Tree, index_seq<arr...>>;
         }
 
         namespace type_traits {
