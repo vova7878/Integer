@@ -618,29 +618,29 @@ namespace JIO {
                 }
 
                 template<typename Arr>
-                using t_get_leaf = decltype(get_h<Arr>());
+                using a_get_leaf = decltype(get_h<Arr>());
 
                 template<size_t... arr>
-                using get_leaf = t_get_leaf<index_seq<arr...>>;
+                using get_leaf = a_get_leaf<index_seq<arr...>>;
 
                 template<typename Arr>
-                using t_get = typename t_get_leaf<Arr>::type;
+                using a_get = typename a_get_leaf<Arr>::type;
 
                 template<size_t... arr>
-                using get = t_get<index_seq<arr...>>;
+                using get = a_get<index_seq<arr...>>;
             };
 
             template<typename data, typename... Leaves>
             using tree = a_tree<data, t_array<Leaves...>>;
 
             template<typename Tree, typename Arr>
-            using a_tree_get = typename Tree::template t_get<Arr>;
+            using a_tree_get = typename Tree::template a_get<Arr>;
 
             template<typename Tree, size_t... arr>
             using tree_get = a_tree_get<Tree, index_seq<arr...>>;
 
             template<typename Tree, typename Arr>
-            using a_tree_get_leaf = typename Tree::template t_get_leaf<Arr>;
+            using a_tree_get_leaf = typename Tree::template a_get_leaf<Arr>;
 
             template<typename Tree, size_t... arr>
             using tree_get_leaf = a_tree_get_leaf<Tree, index_seq<arr...>>;
