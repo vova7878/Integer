@@ -628,6 +628,21 @@ namespace JIO {
 
                 template<size_t... arr>
                 using get = a_get<index_seq<arr...>>;
+
+                template<typename Arr, size_t id = 0 >
+                constexpr static auto remove_h() noexcept {
+                    if constexpr (Arr::length - 1 == id) {
+                        return a_tree<data, t_remove_single<LeavesArr, Arr::get(id)>>();
+                    } else {
+                        return get_t<LeavesArr, Arr::get(id)>::template remove_h<Arr, id + 1 > ();
+                    }
+                }
+
+                template<typename Arr>
+                using a_remove_leaf = decltype(remove_h<Arr>());
+
+                template<size_t... arr>
+                using remove_leaf = a_remove_leaf<index_seq<arr...>>;
             };
 
             template<typename data, typename... Leaves>
@@ -644,6 +659,12 @@ namespace JIO {
 
             template<typename Tree, size_t... arr>
             using tree_get_leaf = a_tree_get_leaf<Tree, index_seq<arr...>>;
+
+            template<typename Tree, typename Arr>
+            using a_tree_remove_leaf = typename Tree::template a_remove_leaf<Arr>;
+
+            template<typename Tree, size_t... arr>
+            using tree_remove_leaf = a_tree_get_leaf<Tree, index_seq<arr...>>;
         }
 
         namespace type_traits {
