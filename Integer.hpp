@@ -622,7 +622,9 @@ namespace JIO {
                     if constexpr (Arr::length - 1 == id) {
                         return t_remove_single<Tree, Arr::get(id)>();
                     } else {
-                        return remove_leaf < get_t<Tree, Arr::get(id)>, Arr, id + 1 > ();
+                        constexpr auto index = Arr::get(id);
+                        using L = decltype(remove_leaf < get_t<Tree, index>, Arr, id + 1 > ());
+                        return t_replace_pack<Tree, index, L>();
                     }
                 }
             }
