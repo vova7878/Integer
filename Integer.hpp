@@ -627,6 +627,28 @@ namespace JIO {
                         return t_replace_pack<Tree, index, L>();
                     }
                 }
+
+                template<typename Tree, typename Leaf, typename Arr, size_t id = 0 >
+                constexpr inline auto insert_leaf() noexcept {
+                    if constexpr (Arr::length - 1 == id) {
+                        return t_insert_pack<Tree, Arr::get(id), Leaf > ();
+                    } else {
+                        constexpr auto index = Arr::get(id);
+                        using L = decltype(insert_leaf < get_t<Tree, index>, Leaf, Arr, id + 1 > ());
+                        return t_replace_pack<Tree, index, L>();
+                    }
+                }
+
+                template<typename Tree, typename Leaf, typename Arr, size_t id = 0 >
+                constexpr inline auto replace_leaf() noexcept {
+                    if constexpr (Arr::length - 1 == id) {
+                        return t_replace_pack<Tree, Arr::get(id), Leaf > ();
+                    } else {
+                        constexpr auto index = Arr::get(id);
+                        using L = decltype(replace_leaf < get_t<Tree, index>, Leaf, Arr, id + 1 > ());
+                        return t_replace_pack<Tree, index, L>();
+                    }
+                }
             }
 
             template<typename Tree, typename Arr>
@@ -640,6 +662,18 @@ namespace JIO {
 
             template<typename Tree, size_t... arr>
             using remove_leaf = a_remove_leaf<Tree, index_seq<arr...>>;
+
+            template<typename Tree, typename Leaf, typename Arr>
+            using a_insert_leaf = decltype(tree_ops_h::insert_leaf<Tree, Leaf, Arr>());
+
+            template<typename Tree, typename Leaf, size_t... arr>
+            using insert_leaf = a_insert_leaf<Tree, Leaf, index_seq<arr...>>;
+
+            template<typename Tree, typename Leaf, typename Arr>
+            using a_replace_leaf = decltype(tree_ops_h::replace_leaf<Tree, Leaf, Arr>());
+
+            template<typename Tree, typename Leaf, size_t... arr>
+            using replace_leaf = a_replace_leaf<Tree, Leaf, index_seq<arr...>>;
         }
 
         namespace type_traits {
