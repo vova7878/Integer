@@ -1322,10 +1322,10 @@ namespace JIO {
                 }
 
                 template<size_t index>
-                constexpr void setByte(type_traits::min_native_t v) noexcept {
+                constexpr I setByte(type_traits::min_native_t v) const noexcept {
                     constexpr U mask = ~(U(type_traits::min_native_t(~0U)) <<
                             (index * type_traits::min_native_bits));
-                    value = (value & mask) | (U(v) << (index * type_traits::min_native_bits));
+                    return I((value & mask) | (U(v) << (index * type_traits::min_native_bits)));
                 }
 
                 template<size_t index>
@@ -1335,9 +1335,9 @@ namespace JIO {
                 }
 
                 template<size_t index>
-                constexpr void setBit(bool v) noexcept {
+                constexpr I setBit(bool v) const noexcept {
                     constexpr U mask = U(1) << index;
-                    value = v ? (value | mask) : (value & ~mask);
+                    return I(v ? (value | mask) : (value & ~mask));
                 }
 
                 constexpr static bool increment_overflow(I &out) noexcept {
