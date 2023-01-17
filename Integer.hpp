@@ -1126,15 +1126,14 @@ namespace JIO {
 
         namespace impl {
 
-            template<typename mem_tree, bool sig>
+            template<size_t, bool>
             struct native_integer_base;
 
-            template<typename mem_tree, bool sig>
+            template<size_t, bool>
             struct native_integer;
 
-            template<typename mem_tree>
-            struct native_integer_base<mem_tree, false> {
-                constexpr static size_t size = mem_tree::value;
+            template<size_t size>
+            struct native_integer_base<size, false> {
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1229,9 +1228,8 @@ namespace JIO {
                 }
             };
 
-            template<typename mem_tree>
-            struct native_integer_base<mem_tree, true> {
-                constexpr static size_t size = mem_tree::value;
+            template<size_t size>
+            struct native_integer_base<size, true> {
                 using S = type_traits::int_of_size<size, true>;
                 using U = type_traits::int_of_size<size, false>;
                 using I = native_integer_base;
@@ -1278,13 +1276,12 @@ namespace JIO {
                 }
             };
 
-            template<typename mem_tree, bool sig>
-            struct native_integer : public native_integer_base<mem_tree, sig> {
-                constexpr static size_t size = mem_tree::value;
+            template<size_t size, bool sig>
+            struct native_integer : public native_integer_base<size, sig> {
                 using I = native_integer;
-                using UI = native_integer<mem_tree, false>;
-                using SI = native_integer<mem_tree, true>;
-                using B = native_integer_base<mem_tree, sig>;
+                using UI = native_integer<size, false>;
+                using SI = native_integer<size, true>;
+                using B = native_integer_base<size, sig>;
                 using U = typename B::U;
                 using S = typename B::S;
                 using M = typename B::M;
@@ -1476,16 +1473,58 @@ namespace JIO {
                 }
             };
 
+            template<typename, bool>
+            class integer;
+
+            template<typename mem_tree, bool, size_t = mem_tree::length>
+            class integer_base;
+
             template<typename mem_tree, bool sig>
-            class tree_integer;
+            class integer_base<mem_tree, sig, 1> {
+            private:
+                using V = native_integer<seq::get_t<mem_tree, 0>::value, sig>;
+                V value;
+
+                constexpr inline integer_base() noexcept = default;
+
+                constexpr inline integer_base(V n) noexcept : value(n) { }
+
+                template<typename, bool>
+                friend class integer;
+            };
+
+            template<typename mem_tree, bool sig>
+            class integer : public integer_base<mem_tree, sig> {
+            private:
+                using B = integer_base<mem_tree, sig>;
+                using V = typename B::V;
+                using B::value;
+
+                constexpr inline integer(V n) noexcept : B(n) { }
+            public:
+
+                constexpr inline static size_t SIZE() noexcept {
+                    return B::size;
+                }
+
+                constexpr inline static bool is_signed() noexcept {
+                    return sig;
+                }
+
+                constexpr inline integer() noexcept = default;
+            };
         }
     }
 
     template<typename mem_tree, bool sig>
-    using tree_integer = i_detail::impl::tree_integer<mem_tree, sig>;
+    using tree_integer = i_detail::impl::integer<mem_tree, sig>;
 
     template<i_detail::size_t size, bool sig, typename mem_seq>
     class seq_integer;
+
+    template<i_detail::size_t size, bool sig>
+    //dummy
+    using integer = tree_integer<i_detail::seq::tree<std::integral_constant<i_detail::size_t, size>>, sig>;
 }
 
 #ifndef INTEGER_HPP_HAS_BUILTIN_CHECK
