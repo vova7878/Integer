@@ -1323,9 +1323,9 @@ namespace JIO {
 
                 template<size_t index>
                 constexpr I setByte(type_traits::min_native_t v) const noexcept {
-                    constexpr U mask = ~(U(type_traits::min_native_t(~0U)) <<
-                            (index * type_traits::min_native_bits));
-                    return I((value & mask) | (U(v) << (index * type_traits::min_native_bits)));
+                    constexpr size_t shift = index * type_traits::min_native_bits;
+                    constexpr U mask = ~(U(type_traits::min_native_t(~0U)) << shift);
+                    return I((value & mask) | (U(v) << shift));
                 }
 
                 template<size_t index>
