@@ -1130,7 +1130,7 @@ namespace JIO {
             struct native_integer_base;
 
             template<typename mem_tree, bool sig>
-            struct native_integer_impl;
+            struct native_integer;
 
             template<typename mem_tree>
             struct native_integer_base<mem_tree, false> {
@@ -1279,11 +1279,11 @@ namespace JIO {
             };
 
             template<typename mem_tree, bool sig>
-            struct native_integer_impl : public native_integer_base<mem_tree, sig> {
+            struct native_integer : public native_integer_base<mem_tree, sig> {
                 constexpr static size_t size = mem_tree::value;
-                using I = native_integer_impl;
-                using UI = native_integer_impl<mem_tree, false>;
-                using SI = native_integer_impl<mem_tree, true>;
+                using I = native_integer;
+                using UI = native_integer<mem_tree, false>;
+                using SI = native_integer<mem_tree, true>;
                 using B = native_integer_base<mem_tree, sig>;
                 using U = typename B::U;
                 using S = typename B::S;
@@ -1292,9 +1292,9 @@ namespace JIO {
                 using B::B;
                 using B::value;
 
-                constexpr native_integer_impl() noexcept = default;
+                constexpr native_integer() noexcept = default;
 
-                constexpr native_integer_impl(B obj) noexcept : B(obj) { }
+                constexpr native_integer(B obj) noexcept : B(obj) { }
 
                 constexpr static I ZERO() noexcept {
                     return B(0);
