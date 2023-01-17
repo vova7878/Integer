@@ -1475,11 +1475,14 @@ namespace JIO {
                     return this->B::operator<=(other);
                 }
             };
+
+            template<typename mem_tree, bool sig>
+            class tree_integer;
         }
     }
 
     template<typename mem_tree, bool sig>
-    class tree_integer;
+    using tree_integer = i_detail::impl::tree_integer<mem_tree, sig>;
 
     template<i_detail::size_t size, bool sig, typename mem_seq>
     class seq_integer;
