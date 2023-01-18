@@ -71,6 +71,9 @@ namespace JIO {
             return value;
         }
 
+        template<bool B, typename T = void>
+        using if_t = std::enable_if_t<B, T>;
+
         namespace micro_std {
             template<typename T, typename TT = std::remove_reference_t<T>>
             using forward_ret_t = std::conditional_t<std::is_lvalue_reference_v<T>, TT&, TT&&>;
@@ -1314,25 +1317,25 @@ namespace JIO {
                 }
 
                 template<size_t index>
-                constexpr type_traits::min_native_t getByte() const noexcept {
+                constexpr type_traits::min_native_t get_byte() const noexcept {
                     return value >> (index * type_traits::min_native_bits);
                 }
 
                 template<size_t index>
-                constexpr I setByte(type_traits::min_native_t v) const noexcept {
+                constexpr I set_byte(type_traits::min_native_t v) const noexcept {
                     constexpr size_t shift = index * type_traits::min_native_bits;
                     constexpr U mask = ~(U(type_traits::min_native_t(~0U)) << shift);
                     return I((value & mask) | (U(v) << shift));
                 }
 
                 template<size_t index>
-                constexpr bool getBit() const noexcept {
+                constexpr bool get_bit() const noexcept {
                     constexpr U mask = U(1) << index;
                     return value & mask;
                 }
 
                 template<size_t index>
-                constexpr I setBit(bool v) const noexcept {
+                constexpr I set_bit(bool v) const noexcept {
                     constexpr U mask = U(1) << index;
                     return I(v ? (value | mask) : (value & ~mask));
                 }
@@ -1473,8 +1476,20 @@ namespace JIO {
                 }
             };
 
+            template<typename mem_tree>
+            constexpr inline size_t mem_tree_size() {
+                return seq::get_t<mem_tree, 0>::value;
+            }
+
             template<typename, bool>
             class integer;
+
+            template<typename mem_tree1, typename mem_tree2, bool sig1, bool sig2,
+            size_t size1 = mem_tree_size<mem_tree1>(),
+            size_t size2 = mem_tree_size<mem_tree2>()>
+            using result_t = integer<
+            std::conditional_t<(size1 == size2 ? (sig1 ? sig2 : true) : (size1 > size2)), mem_tree1, mem_tree2>,
+            (size1 == size2 ? sig1 && sig2 : (size1 > size2 ? sig1 : sig2))>;
 
             template<typename mem_tree, bool, size_t = mem_tree::length>
             class integer_base;
@@ -1482,7 +1497,7 @@ namespace JIO {
             template<typename mem_tree, bool sig>
             class integer_base<mem_tree, sig, 1> {
             private:
-                using V = native_integer<seq::get_t<mem_tree, 0>::value, sig>;
+                using V = native_integer<mem_tree_size<mem_tree>(), sig>;
                 V value;
 
                 constexpr inline integer_base() noexcept = default;
@@ -1493,6 +1508,20 @@ namespace JIO {
                 friend class integer;
             };
 
+            //template<typename mem_tree, bool sig>
+            //class integer_base<mem_tree, sig, 3> {
+            //private:
+            //    using V = pow2_integer<mem_tree_size<mem_tree>(), sig>;
+            //    V value;
+            //
+            //    constexpr inline integer_base() noexcept = default;
+            //
+            //    constexpr inline integer_base(V n) noexcept : value(n) { }
+            //
+            //    template<typename, bool>
+            //    friend class integer;
+            //};
+
             template<typename mem_tree, bool sig>
             class integer : public integer_base<mem_tree, sig> {
             private:
@@ -1500,18 +1529,72 @@ namespace JIO {
                 using V = typename B::V;
                 using B::value;
 
+                constexpr static size_t size = mem_tree_size<mem_tree>();
+
                 constexpr inline integer(V n) noexcept : B(n) { }
             public:
 
+                constexpr inline integer() noexcept = default;
+
                 constexpr inline static size_t SIZE() noexcept {
-                    return B::size;
+                    return size;
                 }
 
-                constexpr inline static bool is_signed() noexcept {
+                constexpr inline static bool IS_SIGNED() noexcept {
                     return sig;
                 }
 
-                constexpr inline integer() noexcept = default;
+                constexpr inline static integer ZERO() noexcept {
+                    return V::ZERO();
+                }
+
+                constexpr inline static integer ONE() noexcept {
+                    return ZERO().add_one();
+                }
+
+                constexpr inline bool is_zero() const noexcept {
+                    return value.is_zero();
+                }
+
+                constexpr inline bool is_negative() const noexcept {
+                    return value.is_negative();
+                }
+
+                constexpr inline bool upper_bit() const noexcept {
+                    return value.upper_bit();
+                }
+
+                constexpr inline integer add_one() const noexcept {
+                    return value.add_one();
+                }
+
+                constexpr inline integer sub_one() const noexcept {
+                    return value.sub_one();
+                }
+
+                template<size_t index>
+                constexpr inline if_t<(index < size), type_traits::min_native_t>
+                get_byte() const noexcept {
+                    return value.template get_byte<index>();
+                }
+
+                template<size_t index>
+                constexpr inline if_t<(index < size), integer>
+                set_byte(type_traits::min_native_t v) noexcept {
+                    return value.template set_byte<index>(v);
+                }
+
+                template<size_t index>
+                constexpr inline if_t<(index < size * type_traits::min_native_bits), bool>
+                get_bit() const noexcept {
+                    return value.template get_bit<index>();
+                }
+
+                template<size_t index>
+                constexpr inline if_t<(index < size * type_traits::min_native_bits), integer>
+                set_bit(bool v) noexcept {
+                    return value.template set_bit<index>(v);
+                }
             };
         }
     }
@@ -1524,7 +1607,7 @@ namespace JIO {
 
     template<i_detail::size_t size, bool sig>
     //dummy
-    using integer = tree_integer<i_detail::seq::tree<std::integral_constant<i_detail::size_t, size>>, sig>;
+    using integer = tree_integer<i_detail::seq::tree<i_detail::size_constant<size>>, sig>;
 }
 
 #ifndef INTEGER_HPP_HAS_BUILTIN_CHECK
