@@ -1300,46 +1300,6 @@ namespace JIO {
                     return B(0);
                 }
 
-                constexpr bool is_zero() const noexcept {
-                    return value == 0;
-                }
-
-                constexpr bool upper_bit() const noexcept {
-                    return value >> (size * type_traits::min_native_bits - 1);
-                }
-
-                constexpr I add_one() const noexcept {
-                    return I(value + 1);
-                }
-
-                constexpr I sub_one() const noexcept {
-                    return I(value - 1);
-                }
-
-                template<size_t index>
-                constexpr type_traits::min_native_t get_byte() const noexcept {
-                    return value >> (index * type_traits::min_native_bits);
-                }
-
-                template<size_t index>
-                constexpr I set_byte(type_traits::min_native_t v) const noexcept {
-                    constexpr size_t shift = index * type_traits::min_native_bits;
-                    constexpr U mask = ~(U(type_traits::min_native_t(~0U)) << shift);
-                    return I((value & mask) | (U(v) << shift));
-                }
-
-                template<size_t index>
-                constexpr bool get_bit() const noexcept {
-                    constexpr U mask = U(1) << index;
-                    return value & mask;
-                }
-
-                template<size_t index>
-                constexpr I set_bit(bool v) const noexcept {
-                    constexpr U mask = U(1) << index;
-                    return I(v ? (value | mask) : (value & ~mask));
-                }
-
                 constexpr static bool increment_overflow(I &out) noexcept {
                     return B::increment_overflow(out);
                 }
@@ -1395,12 +1355,52 @@ namespace JIO {
                     return tmp;
                 }
 
+                constexpr bool is_zero() const noexcept {
+                    return value == 0;
+                }
+
+                constexpr bool upper_bit() const noexcept {
+                    return value >> (size * type_traits::min_native_bits - 1);
+                }
+
+                constexpr I add_one() const noexcept {
+                    return I(value + 1);
+                }
+
+                constexpr I sub_one() const noexcept {
+                    return I(value - 1);
+                }
+
                 constexpr size_t clz() const noexcept {
                     return utils::clz(value);
                 }
 
                 constexpr size_t ctz() const noexcept {
                     return utils::ctz(value);
+                }
+
+                template<size_t index>
+                constexpr type_traits::min_native_t get_byte() const noexcept {
+                    return value >> (index * type_traits::min_native_bits);
+                }
+
+                template<size_t index>
+                constexpr I set_byte(type_traits::min_native_t v) const noexcept {
+                    constexpr size_t shift = index * type_traits::min_native_bits;
+                    constexpr U mask = ~(U(type_traits::min_native_t(~0U)) << shift);
+                    return I((value & mask) | (U(v) << shift));
+                }
+
+                template<size_t index>
+                constexpr bool get_bit() const noexcept {
+                    constexpr U mask = U(1) << index;
+                    return value & mask;
+                }
+
+                template<size_t index>
+                constexpr I set_bit(bool v) const noexcept {
+                    constexpr U mask = U(1) << index;
+                    return I(v ? (value | mask) : (value & ~mask));
                 }
 
                 constexpr I operator+() const noexcept {
@@ -1524,7 +1524,8 @@ namespace JIO {
 
             template<typename mem_tree, bool sig>
             class integer : public integer_base<mem_tree, sig> {
-            private:
+            public:
+                //private:
                 using B = integer_base<mem_tree, sig>;
                 using V = typename B::V;
                 using B::value;
@@ -1550,6 +1551,61 @@ namespace JIO {
 
                 constexpr inline static integer ONE() noexcept {
                     return ZERO().add_one();
+                }
+
+                constexpr static bool
+                increment_overflow(integer &out) noexcept {
+                    return V::increment_overflow(out.value);
+                }
+
+                constexpr static bool
+                decrement_overflow(integer &out) noexcept {
+                    return V::decrement_overflow(out.value);
+                }
+
+                constexpr static bool
+                increment_carry(integer &out, bool cf) noexcept {
+                    return V::increment_carry(out.value, cf);
+                }
+
+                constexpr static bool
+                decrement_carry(integer &out, bool cf) noexcept {
+                    return V::decrement_carry(out.value, cf);
+                }
+
+                constexpr static bool
+                add_overflow(integer v1, integer v2, integer &out) noexcept {
+                    return V::add_overflow(v1.value, v2.value, out.value);
+                }
+
+                constexpr static bool
+                sub_overflow(integer v1, integer v2, integer &out) noexcept {
+                    return V::sub_overflow(v1.value, v2.value, out.value);
+                }
+
+                constexpr static bool
+                add_carry(integer v1, integer v2, bool cf, integer &out) noexcept {
+                    return V::add_carry(v1.value, v2.value, cf, out.value);
+                }
+
+                constexpr static bool
+                sub_carry(integer v1, integer v2, bool cf, integer &out) noexcept {
+                    return V::sub_carry(v1.value, v2.value, cf, out.value);
+                }
+
+                constexpr static bool
+                add_zero_carry(integer v1, bool cf, integer &out) noexcept {
+                    return V::add_zero_carry(v1.value, cf, out.value);
+                }
+
+                constexpr static bool
+                sub_zero_carry(integer v1, bool cf, integer &out) noexcept {
+                    return V::sub_zero_carry(v1.value, cf, out.value);
+                }
+
+                constexpr static bool
+                left_shift_one_bit(integer &out, bool bit) noexcept {
+                    return V::left_shift_one_bit(out.value, bit);
                 }
 
                 constexpr inline bool is_zero() const noexcept {
@@ -1580,7 +1636,7 @@ namespace JIO {
 
                 template<size_t index>
                 constexpr inline if_t<(index < size), integer>
-                set_byte(type_traits::min_native_t v) noexcept {
+                set_byte(type_traits::min_native_t v) const noexcept {
                     return value.template set_byte<index>(v);
                 }
 
@@ -1592,7 +1648,7 @@ namespace JIO {
 
                 template<size_t index>
                 constexpr inline if_t<(index < size * type_traits::min_native_bits), integer>
-                set_bit(bool v) noexcept {
+                set_bit(bool v) const noexcept {
                     return value.template set_bit<index>(v);
                 }
             };
