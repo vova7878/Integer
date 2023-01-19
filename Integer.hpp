@@ -1282,8 +1282,6 @@ namespace JIO {
             template<size_t size, bool sig>
             struct native_integer : public native_integer_base<size, sig> {
                 using I = native_integer;
-                using UI = native_integer<size, false>;
-                using SI = native_integer<size, true>;
                 using B = native_integer_base<size, sig>;
                 using U = typename B::U;
                 using S = typename B::S;
