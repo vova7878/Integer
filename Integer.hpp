@@ -1606,6 +1606,25 @@ namespace JIO {
                     return V::left_shift_one_bit(out.value, bit);
                 }
 
+                template<typename mem_tree2, bool sig2>
+                constexpr inline operator integer<mem_tree2, sig2>() const noexcept {
+                    using I2 = integer<mem_tree2, sig2>;
+                    //constexpr size_t size2 = mem_tree_size<mem_tree2>();
+                    if constexpr((mem_tree::length == 1) && (mem_tree2::length == 1)) {
+                        return typename I2::V(std::conditional_t<sig, typename V::S, typename V::U > (value.value));
+                    } else {
+                        static_assert(instantiation_context<mem_tree2>(false), "not implemented yet");
+                    }
+                }
+
+                constexpr inline integer<mem_tree, true> s() const noexcept {
+                    return *this;
+                }
+
+                constexpr inline integer<mem_tree, false> u() const noexcept {
+                    return *this;
+                }
+
                 constexpr inline bool is_zero() const noexcept {
                     return value.is_zero();
                 }
@@ -1649,6 +1668,141 @@ namespace JIO {
                 set_bit(bool v) const noexcept {
                     return value.template set_bit<index>(v);
                 }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator+(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value + R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator-(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value - R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator*(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value * R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator/(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value / R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator%(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value % R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator|(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value | R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator&(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value & R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline R
+                operator^(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value ^ R(v2).value;
+                }
+
+                //todo: << >>
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline bool
+                operator==(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value == R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline bool
+                operator!=(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value != R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline bool
+                operator<(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value < R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline bool
+                operator<=(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value <= R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline bool
+                operator>(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value > R(v2).value;
+                }
+
+                template<typename mem_tree2, bool sig2,
+                typename R = result_t<mem_tree, mem_tree2, sig, sig2>>
+                constexpr inline bool
+                operator>=(integer<mem_tree2, sig2> v2) const noexcept {
+                    return R(*this).value >= R(v2).value;
+                }
+
+                constexpr inline integer operator~() const noexcept {
+                    return ~value;
+                }
+
+                constexpr inline integer operator-() const noexcept {
+                    return -value;
+                }
+
+                constexpr inline integer operator+() const noexcept {
+                    return *this;
+                }
+
+                constexpr inline integer& operator++() noexcept {
+                    return *this = add_one();
+                }
+
+                constexpr inline integer& operator--() noexcept {
+                    return *this = sub_one();
+                }
+
+                constexpr inline integer operator++(int) noexcept {
+                    integer tmp = *this;
+                    operator++();
+                    return tmp;
+                }
+
+                constexpr inline integer operator--(int) noexcept {
+                    integer tmp = *this;
+                    operator--();
+                    return tmp;
+                }
+
+                template<typename, bool>
+                friend class integer;
             };
         }
     }
